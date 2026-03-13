@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Felis lenses — golden fortune wheel</title>
+  <style>
+    :root{
+      --bg:#f6f3ee;
+      --bg-soft:#ede7df;
+      --panel:#ffffffcc;
+      --panel-strong:#ffffffee;
+      --text:#171514;
+      --muted:#736c64;
+      --line:#ddd2c3;
+      --gold1:#f6d995;
+      --gold2:#d0a24d;
+      --gold3:#8d6623;
+      --gold4:#fff0c8;
+      --dark:#141313;
+      --shadow:0 24px 60px rgba(47,34,14,.12);
+      --overlay:rgba(18,16,14,.34);
+      --card-grad:linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.92));
+      --button1:#2a2a2d;
+      --button2:#101115;
+    }
+    body.dark{
+      --bg:#090a0d;
+      --bg-soft:#111318;
+      --panel:rgba(17,20,26,.78);
+      --panel-strong:rgba(16,20,27,.94);
+      --text:#f4f1eb;
+      --muted:#a8a198;
+      --line:rgba(255,255,255,.09);
+      --gold1:#f6d995;
+      --gold2:#d0a24d;
+      --gold3:#7d591d;
+      --gold4:#fff0c8;
+      --dark:#050505;
+      --shadow:0 28px 80px rgba(0,0,0,.42);
+      --overlay:rgba(0,0,0,.56);
+      --card-grad:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+      --button1:#2a2c31;
+      --button2:#07080b;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:Inter, Arial, Helvetica, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(208,162,77,.14), transparent 24%),
+        radial-gradient(circle at bottom right, rgba(208,162,77,.09), transparent 22%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
+      transition:background .25s ease,color .25s ease;
+      overflow-x:hidden;
+    }
+    body.menu-open{overflow:hidden}
+    a{text-decoration:none;color:inherit}
+    .overlay{
+      position:fixed;inset:0;background:var(--overlay);opacity:0;visibility:hidden;transition:.22s ease;z-index:40;
+    }
+    .overlay.open{opacity:1;visibility:visible}
+    .drawer{
+      position:fixed;right:0;top:0;z-index:50;width:min(380px,90vw);height:100vh;
+      background:var(--panel-strong);border-left:1px solid var(--line);transform:translateX(100%);transition:.24s ease;
+      padding:20px 16px 18px;display:flex;flex-direction:column;gap:14px;backdrop-filter:blur(18px);box-shadow:var(--shadow)
+    }
+    .drawer.open{transform:translateX(0)}
+    .drawer-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .drawer-title{font-size:20px;font-weight:800}
+    .close-btn,.menu-btn{
+      width:50px;height:50px;border:none;border-radius:15px;cursor:pointer;
+      background:linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.04));
+      box-shadow:inset 0 1px 1px rgba(255,255,255,.24),0 0 0 1px var(--line);color:var(--text)
+    }
+    .menu-btn{display:grid;place-items:center}
+    .lines{width:22px;display:flex;flex-direction:column;gap:5px}
+    .lines span{height:2.5px;border-radius:999px;background:var(--text);transition:.22s ease}
+    .menu-btn[aria-expanded="true"] .lines span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+    .menu-btn[aria-expanded="true"] .lines span:nth-child(2){opacity:0}
+    .menu-btn[aria-expanded="true"] .lines span:nth-child(3){transform:translateY(-8px) rotate(-45deg)}
+
+    .drawer-card{
+      padding:16px;border-radius:20px;border:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04))
+    }
+    .drawer-label{font-size:13px;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.1em}
+    .theme-toggle{
+      display:grid;grid-template-columns:1fr 1fr;gap:8px;
+      background:rgba(255,255,255,.05);padding:6px;border-radius:16px;border:1px solid var(--line)
+    }
+    .theme-opt{
+      min-height:44px;border:none;border-radius:12px;cursor:pointer;font-weight:800;background:transparent;color:var(--text)
+    }
+    .theme-opt.active{
+      background:linear-gradient(180deg,var(--gold1),var(--gold2) 52%, var(--gold3));
+      color:#12110e;box-shadow:inset 0 1px 1px rgba(255,255,255,.45)
+    }
+    .drawer-link{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 0;color:var(--text)
+    }
+    .drawer-link + .drawer-link{border-top:1px solid var(--line)}
+    .link-note{font-size:13px;color:var(--muted)}
+
+    .shell{
+      width:min(1280px, calc(100% - 24px));
+      margin:12px auto;
+      border-radius:30px;
+      border:1px solid var(--line);
+      background:var(--panel);
+      backdrop-filter:blur(16px);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+    header{
+      position:sticky;top:0;z-index:20;
+      display:flex;align-items:center;justify-content:space-between;gap:14px;
+      padding:18px 20px;
+      background:var(--panel-strong);
+      border-bottom:1px solid var(--line);
+      backdrop-filter:blur(16px);
+    }
+    .brand{display:flex;align-items:center;gap:14px;min-width:0}
+    .brand-mark{
+      width:52px;height:52px;border-radius:16px;flex-shrink:0;
+      background:linear-gradient(145deg,var(--gold4),var(--gold2) 38%, var(--gold3) 100%);
+      box-shadow:inset 0 1px 1px rgba(255,255,255,.55), 0 10px 24px rgba(208,162,77,.24);
+      position:relative;overflow:hidden;
+    }
+    .brand-mark::after{
+      content:"";position:absolute;inset:2px;border-radius:14px;
+      background:linear-gradient(145deg,rgba(255,255,255,.22),transparent 35%,transparent 68%,rgba(255,255,255,.06));
+    }
+    .brand-text{min-width:0}
+    .brand-name{font-size:28px;font-weight:800;letter-spacing:-.03em}
+    .brand-sub{font-size:12px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;margin-top:4px}
+
+    .content{
+      display:grid;grid-template-columns:1.03fr .97fr;gap:18px;padding:22px;
+    }
+    .panel,.side{
+      border:1px solid var(--line);border-radius:28px;background:var(--card-grad), var(--panel-strong);box-shadow:var(--shadow)
+    }
+    .panel{padding:28px 22px;position:relative;overflow:hidden}
+    .panel::before{
+      content:"";position:absolute;right:-140px;top:-140px;width:360px;height:360px;border-radius:50%;
+      background:radial-gradient(circle, rgba(208,162,77,.18), transparent 65%);
+      pointer-events:none;
+    }
+    .eyebrow{
+      display:inline-flex;padding:8px 13px;border-radius:999px;border:1px solid var(--line);
+      color:var(--muted);font-size:12px;letter-spacing:.14em;text-transform:uppercase;background:rgba(255,255,255,.04)
+    }
+    h1{font-size:clamp(34px,5vw,54px);line-height:1;letter-spacing:-.05em;margin:16px 0 12px}
+    .lead{font-size:16px;line-height:1.62;color:var(--muted);max-width:640px;margin:0 0 22px}
+
+    .wheel-area{display:flex;flex-direction:column;align-items:center;gap:20px}
+    .wheel-wrap{
+      position:relative;width:min(86vw, 560px);aspect-ratio:1/1;display:grid;place-items:center;margin-inline:auto;
+    }
+    .halo{
+      position:absolute;inset:4%;border-radius:50%;
+      background:radial-gradient(circle, rgba(208,162,77,.12), rgba(208,162,77,.03) 42%, transparent 70%);
+      filter:blur(14px);z-index:0;
+    }
+    .pointer{
+      position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+      width:0;height:0;border-left:18px solid transparent;border-right:18px solid transparent;border-top:38px solid #ef6b73;
+      filter:drop-shadow(0 10px 16px rgba(239,107,115,.24));z-index:7;
+    }
+    .outer-ring{
+      position:absolute;inset:0;border-radius:50%;z-index:1;
+      background:
+        radial-gradient(circle,
+          transparent 56%,
+          rgba(255,255,255,.98) 57.2%,
+          rgba(248,235,198,.98) 58.8%,
+          rgba(208,162,77,1) 60.5%,
+          rgba(255,243,210,.98) 62%,
+          rgba(143,102,35,.98) 63.5%,
+          rgba(255,243,210,.96) 65.2%,
+          rgba(255,255,255,.06) 66.2%,
+          transparent 67.2%);
+      box-shadow:0 12px 32px rgba(208,162,77,.16);
+    }
+    .wheel{
+      position:absolute;inset:14px;border-radius:50%;overflow:hidden;z-index:2;
+      border:8px solid rgba(255,249,236,.98);
+      box-shadow:0 0 0 2px rgba(208,162,77,.14), inset 0 0 0 1px rgba(255,255,255,.18), 0 22px 45px rgba(0,0,0,.2);
+      transition:transform 8.8s cubic-bezier(.08,.86,.14,1);
+      background:conic-gradient(
+        #f6d995 0deg 30deg,
+        #d0a24d 30deg 60deg,
+        #fff0c8 60deg 90deg,
+        #c5923a 90deg 120deg,
+        #f2cb79 120deg 150deg,
+        #ae7c2d 150deg 180deg,
+        #f7dfac 180deg 210deg,
+        #c99740 210deg 240deg,
+        #ffe9b9 240deg 270deg,
+        #b58231 270deg 300deg,
+        #f0ce84 300deg 330deg,
+        #9c6d27 330deg 360deg
+      );
+    }
+    .wheel::before{
+      content:"";position:absolute;inset:0;border-radius:50%;
+      background:
+        radial-gradient(circle at 28% 20%, rgba(255,255,255,.28), transparent 20%),
+        radial-gradient(circle at 50% 55%, rgba(255,255,255,.05), transparent 48%);
+      pointer-events:none;
+    }
+
+    .lights{
+      position:absolute;inset:2.2%;z-index:5;border-radius:50%;pointer-events:none;
+    }
+    .bulb{
+      position:absolute;width:13px;height:13px;border-radius:50%;
+      background:radial-gradient(circle, #fff8de 0%, #ffe8a0 35%, #d6a642 70%, #8d6424 100%);
+      box-shadow:0 0 10px rgba(255,230,167,.65), 0 0 20px rgba(214,166,66,.28);
+      animation:blink 1.6s infinite ease-in-out;
+    }
+    .bulb.alt{animation-delay:.8s}
+    @keyframes blink{
+      0%,100%{transform:scale(.9);opacity:.7}
+      50%{transform:scale(1.12);opacity:1}
+    }
+
+    .center-core{
+      position:absolute;width:190px;height:190px;border-radius:50%;z-index:4;display:grid;place-items:center;text-align:center;padding:16px;
+      background:linear-gradient(145deg, #fff8ea, #dcb060 18%, #9b6e28 55%, #6b4a1b 100%);
+      border:7px solid rgba(255,248,232,.98);
+      box-shadow:inset 0 1px 1px rgba(255,255,255,.62), inset 0 -12px 22px rgba(0,0,0,.12), 0 20px 42px rgba(152,108,33,.22);
+      overflow:hidden;
+    }
+    .center-core::after{
+      content:"";position:absolute;inset:0;border-radius:50%;
+      background:linear-gradient(145deg, rgba(255,255,255,.25), transparent 34%, transparent 66%, rgba(255,255,255,.06));
+      pointer-events:none;
+    }
+    .center-text{
+      position:relative;z-index:1;font-size:31px;font-weight:800;line-height:1.03;letter-spacing:-.03em;color:#fffaf1;
+      text-shadow:0 2px 18px rgba(255,255,255,.08)
+    }
+    .wheel-label{
+      position:absolute;left:50%;top:50%;z-index:3;width:132px;text-align:center;font-size:12px;font-weight:800;line-height:1.16;
+      color:#4a3311;text-shadow:0 1px 0 rgba(255,255,255,.56);user-select:none;transform-origin:center center;
+    }
+
+    .btn{
+      min-width:250px;min-height:56px;padding:0 24px;border:none;border-radius:18px;cursor:pointer;font-size:21px;font-weight:800;color:#f7f7fa;
+      background:linear-gradient(180deg, var(--button1), var(--button2));
+      box-shadow:inset 0 1px 1px rgba(255,255,255,.28), inset 0 -10px 18px rgba(0,0,0,.45), 0 18px 36px rgba(0,0,0,.24), 0 0 0 1px rgba(255,255,255,.08);
+      position:relative;overflow:hidden;
+    }
+    .btn::after{
+      content:"";position:absolute;inset:-1px;border-radius:18px;padding:1px;
+      background:linear-gradient(145deg, rgba(255,255,255,.7), rgba(209,162,77,.42), rgba(255,255,255,.08));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none;
+    }
+    .btn:disabled{opacity:.65;cursor:not-allowed}
+    .note{text-align:center;color:var(--muted);max-width:560px;line-height:1.55;font-size:14px}
+
+    .side{padding:20px;display:flex;flex-direction:column;gap:16px}
+    .side h2{font-size:24px;margin:0;letter-spacing:-.03em}
+    .card{
+      border:1px solid var(--line);border-radius:22px;padding:18px;background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.04));
+    }
+    .card-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+    .last-prize{font-size:28px;font-weight:800;line-height:1.1}
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .stat-v{font-size:23px;font-weight:800}
+    .history-list{list-style:none;margin:0;padding:0;max-height:400px;overflow:auto}
+    .history-item{padding:10px 0;border-bottom:1px solid var(--line);line-height:1.45;color:var(--text)}
+    .history-item:last-child{border-bottom:none}
+
+    .win-modal{
+      position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(4,8,16,.54);backdrop-filter:blur(8px);
+      z-index:60;padding:24px;
+    }
+    .win-modal.show{display:flex}
+    .modal-card{
+      width:min(100%, 460px);border-radius:28px;padding:28px 24px;text-align:center;position:relative;overflow:hidden;
+      background:var(--panel-strong);border:1px solid var(--line);box-shadow:var(--shadow)
+    }
+    .modal-top{
+      display:inline-flex;padding:10px 14px;border-radius:999px;border:1px solid var(--line);
+      background:linear-gradient(180deg,var(--gold1),var(--gold2) 52%, var(--gold3));color:#17120d;font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:18px;font-weight:800
+    }
+    .modal-title{margin:0 0 10px;font-size:34px;font-weight:800;letter-spacing:-.03em}
+    .modal-prize{margin:0 0 12px;font-size:24px;font-weight:800;line-height:1.15}
+    .modal-time{color:var(--muted);font-size:14px;margin-bottom:20px}
+    .modal-btn{
+      min-width:180px;min-height:48px;border:none;border-radius:16px;cursor:pointer;font-size:17px;font-weight:800;color:#f7f7fa;
+      background:linear-gradient(180deg, var(--button1), var(--button2));
+      box-shadow:inset 0 1px 1px rgba(255,255,255,.28), inset 0 -10px 18px rgba(0,0,0,.45), 0 16px 32px rgba(0,0,0,.22), 0 0 0 1px rgba(255,255,255,.08)
+    }
+
+    .confetti,.sparkles{
+      position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:1
+    }
+    .spark{
+      position:absolute;width:2px;height:2px;border-radius:50%;background:rgba(255,255,255,.9);box-shadow:0 0 10px rgba(255,255,255,.86);
+      animation:floatStar linear infinite;opacity:.45;
+    }
+    @keyframes floatStar{
+      from{transform:translateY(0);opacity:.1} 50%{opacity:.8} to{transform:translateY(-120px);opacity:.08}
+    }
+    .piece{
+      position:absolute;width:10px;height:18px;opacity:0;animation:burst 1800ms ease-out forwards;
+    }
+    @keyframes burst{
+      0%{transform:translate(0,0) rotate(0deg);opacity:1}
+      100%{transform:translate(var(--tx), var(--ty)) rotate(var(--rot));opacity:0}
+    }
+
+    @media (max-width:1050px){
+      .content{grid-template-columns:1fr}
+    }
+    @media (max-width:760px){
+      .shell{width:calc(100% - 12px);margin:6px auto;border-radius:22px}
+      header{padding:14px}
+      .brand-name{font-size:24px}
+      .content{padding:14px}
+      .panel,.side{border-radius:22px}
+      .panel{padding:20px 14px}
+      .wheel-wrap{width:min(96vw, 500px)}
+      .center-core{width:152px;height:152px}
+      .center-text{font-size:26px}
+      .wheel-label{width:102px;font-size:10px}
+      .btn{min-width:220px;font-size:19px}
+    }
+    @media (max-width:480px){
+      .shell{width:calc(100% - 8px);margin:4px auto;border-radius:20px}
+      .content{padding:10px}
+      h1{font-size:30px}
+      .lead{font-size:14px}
+      .wheel-wrap{width:min(96vw, 430px)}
+      .wheel{inset:10px}
+      .center-core{width:128px;height:128px;border-width:5px}
+      .center-text{font-size:21px}
+      .wheel-label{width:82px;font-size:8.3px}
+      .stats{grid-template-columns:1fr 1fr}
+      .last-prize{font-size:22px}
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay" id="overlay"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div class="drawer-title">Панель управления</div>
+      <button class="close-btn" id="closeDrawer" aria-label="Закрыть">×</button>
+    </div>
+
+    <div class="drawer-card">
+      <div class="drawer-label">Тема оформления</div>
+      <div class="theme-toggle">
+        <button class="theme-opt" id="lightBtn">☀ Светлая</button>
+        <button class="theme-opt" id="darkBtn">☾ Тёмная</button>
+      </div>
+    </div>
+
+    <div class="drawer-card">
+      <div class="drawer-label">Разделы</div>
+      <a class="drawer-link" href="felis_main_gold_site.html"><span>Главная</span><span class="link-note">сайт магазина</span></a>
+      <a class="drawer-link" href="#"><span>Карта лояльности</span><span class="link-note">@linzy_uzb</span></a>
+      <a class="drawer-link" href="felis_wheel_gold_site.html"><span>Колесо фортуны</span><span class="link-note">текущая страница</span></a>
+    </div>
+
+    <div class="drawer-card">
+      <div class="drawer-label">Контакты</div>
+      <a class="drawer-link" href="https://t.me/linzy_uzb"><span>Telegram</span><span class="link-note">@linzy_uzb</span></a>
+      <a class="drawer-link" href="tel:+998945429860"><span>Позвонить</span><span class="link-note">+998 94 542 98 60</span></a>
+    </div>
+  </aside>
+
+  <div class="sparkles" id="sparkles"></div>
+  <div class="confetti" id="confetti"></div>
+
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div class="brand-text">
+          <div class="brand-name">Felis lenses</div>
+          <div class="brand-sub">fortune wheel experience</div>
+        </div>
+      </div>
+      <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-label="Открыть меню">
+        <span class="lines"><span></span><span></span><span></span></span>
+      </button>
+    </header>
+
+    <section class="content">
+      <div class="panel">
+        <div class="eyebrow">gold reward system</div>
+        <h1>Колесо фортуны в золотой стилистике</h1>
+        <p class="lead">
+          Здесь страница уже выглядит как продолжение основного сайта: та же панель управления,
+          те же светлая и тёмная темы, тот же общий язык интерфейса. Колесо я перевёл в двухцветную золотую палитру
+          и добавил умеренные лампочки по кругу, чтобы эффект был заметный, но не дешёвый.
+        </p>
+
+        <div class="wheel-area">
+          <div class="wheel-wrap">
+            <div class="halo"></div>
+            <div class="pointer"></div>
+            <div class="outer-ring"></div>
+            <div class="lights" id="lights"></div>
+            <div class="wheel" id="wheel"></div>
+            <div class="center-core"><div class="center-text">Felis<br>lenses</div></div>
+          </div>
+
+          <button class="btn" id="spinBtn">Крутить</button>
+          <div class="note">
+            Более дорогие призы выпадают реже, а утешительные — чаще.
+            История хранится на этом устройстве. Для продакшена позже можно привязать её к аккаунтам и CRM.
+          </div>
+        </div>
+      </div>
+
+      <aside class="side">
+        <h2>Выигрыш и история</h2>
+
+        <div class="card">
+          <div class="card-label">Последний результат</div>
+          <div class="last-prize" id="currentPrize">Пока нет результата</div>
+        </div>
+
+        <div class="stats">
+          <div class="card">
+            <div class="card-label">Всего прокруток</div>
+            <div class="stat-v" id="spinCount">0</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Записей в истории</div>
+            <div class="stat-v" id="historyCount">0</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">История полученных призов</div>
+          <ul class="history-list" id="prizeHistory"></ul>
+        </div>
+      </aside>
+    </section>
+  </div>
+
+  <div class="win-modal" id="winModal">
+    <div class="modal-card">
+      <div class="modal-top">Ваш выигрыш</div>
+      <h3 class="modal-title">Поздравляем</h3>
+      <div class="modal-prize" id="modalPrize">Промокод</div>
+      <div class="modal-time" id="modalTime">14.03.26 02:33</div>
+      <button class="modal-btn" id="closeModal">Закрыть</button>
+    </div>
+  </div>
+
+  <script>
+    const body = document.body;
+    const menuBtn = document.getElementById('menuBtn');
+    const drawer = document.getElementById('drawer');
+    const overlay = document.getElementById('overlay');
+    const closeDrawer = document.getElementById('closeDrawer');
+    const lightBtn = document.getElementById('lightBtn');
+    const darkBtn = document.getElementById('darkBtn');
+
+    const wheel = document.getElementById('wheel');
+    const spinBtn = document.getElementById('spinBtn');
+    const currentPrizeEl = document.getElementById('currentPrize');
+    const spinCountEl = document.getElementById('spinCount');
+    const historyCountEl = document.getElementById('historyCount');
+    const prizeHistoryEl = document.getElementById('prizeHistory');
+    const lightsEl = document.getElementById('lights');
+    const confettiBox = document.getElementById('confetti');
+    const sparkles = document.getElementById('sparkles');
+    const winModal = document.getElementById('winModal');
+    const modalPrize = document.getElementById('modalPrize');
+    const modalTime = document.getElementById('modalTime');
+    const closeModal = document.getElementById('closeModal');
+
+    const wheelSlots = [
+      { id: 1,  text: 'Промокод 200 000 сум' },
+      { id: 11, text: '10% скидка на товар' },
+      { id: 4,  text: 'Промокод 1 000 сум' },
+      { id: 7,  text: '50% скидка на товар' },
+      { id: 2,  text: 'Промокод 50 000 сум' },
+      { id: 9,  text: '25% скидка на товар' },
+      { id: 5,  text: 'Промокод 1 000 сум' },
+      { id: 12, text: '10% скидка на товар' },
+      { id: 6,  text: 'Бесплатный товар' },
+      { id: 10, text: '25% скидка на товар' },
+      { id: 3,  text: 'Промокод 10 000 сум' },
+      { id: 8,  text: '50% скидка на товар' }
+    ];
+
+    function applyTheme(theme){
+      body.classList.toggle('dark', theme === 'dark');
+      localStorage.setItem('felis-theme', theme);
+      lightBtn.classList.toggle('active', theme !== 'dark');
+      darkBtn.classList.toggle('active', theme === 'dark');
+    }
+    function openDrawer(){
+      drawer.classList.add('open');
+      overlay.classList.add('open');
+      body.classList.add('menu-open');
+      menuBtn.setAttribute('aria-expanded','true');
+    }
+    function closeMenu(){
+      drawer.classList.remove('open');
+      overlay.classList.remove('open');
+      body.classList.remove('menu-open');
+      menuBtn.setAttribute('aria-expanded','false');
+    }
+    menuBtn.addEventListener('click', () => drawer.classList.contains('open') ? closeMenu() : openDrawer());
+    closeDrawer.addEventListener('click', closeMenu);
+    overlay.addEventListener('click', closeMenu);
+    lightBtn.addEventListener('click', () => applyTheme('light'));
+    darkBtn.addEventListener('click', () => applyTheme('dark'));
+
+    function choosePrize(nextSpinNumber) {
+      if (nextSpinNumber % 100 === 0) return findSlotById(1);
+      if (nextSpinNumber % 70 === 0)  return findSlotById(2);
+      if (nextSpinNumber % 50 === 0)  return findSlotById(3);
+      if (nextSpinNumber % 30 === 0)  return findSlotById(6);
+      if (nextSpinNumber % 20 === 0)  return nextSpinNumber % 40 === 0 ? findSlotById(8) : findSlotById(7);
+      if (nextSpinNumber % 10 === 0)  return nextSpinNumber % 20 === 10 ? findSlotById(9) : findSlotById(10);
+      if (nextSpinNumber % 5 === 0)   return nextSpinNumber % 10 === 5 ? findSlotById(11) : findSlotById(12);
+      return Math.random() < 0.5 ? findSlotById(4) : findSlotById(5);
+    }
+    function findSlotById(id){ return wheelSlots.find(slot => slot.id === id); }
+
+    function createLabels() {
+      const segmentAngle = 360 / wheelSlots.length;
+      wheelSlots.forEach((slot, index) => {
+        const label = document.createElement('div');
+        label.className = 'wheel-label';
+        label.textContent = slot.text;
+        const angle = index * segmentAngle + segmentAngle / 2;
+        label.style.transform = 'translate(-50%, -50%) rotate(' + angle + 'deg) translateY(-198px) rotate(-90deg)';
+        wheel.appendChild(label);
+      });
+    }
+
+    function createLights() {
+      const count = 24;
+      const radius = 46;
+      for (let i = 0; i < count; i++) {
+        const bulb = document.createElement('span');
+        bulb.className = 'bulb' + (i % 2 ? ' alt' : '');
+        const angle = (Math.PI * 2 * i / count) - Math.PI / 2;
+        bulb.style.left = 'calc(50% + ' + (Math.cos(angle) * radius) + '% - 6.5px)';
+        bulb.style.top = 'calc(50% + ' + (Math.sin(angle) * radius) + '% - 6.5px)';
+        lightsEl.appendChild(bulb);
+      }
+    }
+
+    function buildStars() {
+      for (let i = 0; i < 42; i++) {
+        const star = document.createElement('span');
+        star.className = 'spark';
+        star.style.left = (Math.random() * 100) + 'vw';
+        star.style.top = (40 + Math.random() * 65) + 'vh';
+        star.style.animationDuration = (4 + Math.random() * 8) + 's';
+        star.style.animationDelay = (Math.random() * 6) + 's';
+        star.style.opacity = (0.15 + Math.random() * 0.5);
+        sparkles.appendChild(star);
+      }
+    }
+
+    function getStorageNumber(key, fallback = 0) {
+      const value = Number(localStorage.getItem(key));
+      return Number.isFinite(value) ? value : fallback;
+    }
+    function getStorageJSON(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch { return fallback; }
+    }
+    function formatDateTime(date) {
+      const y = String(date.getFullYear()).slice(-2);
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      const hh = String(date.getHours()).padStart(2, '0');
+      const mm = String(date.getMinutes()).padStart(2, '0');
+      return d + '.' + m + '.' + y + ' ' + hh + ':' + mm;
+    }
+
+    let spinCount = getStorageNumber('felis_gold_spin_count', 0);
+    let prizeHistory = getStorageJSON('felis_gold_prize_history', []);
+    let currentRotation = getStorageNumber('felis_gold_rotation', 0);
+    let isSpinning = false;
+
+    function saveState() {
+      localStorage.setItem('felis_gold_spin_count', String(spinCount));
+      localStorage.setItem('felis_gold_prize_history', JSON.stringify(prizeHistory));
+      localStorage.setItem('felis_gold_rotation', String(currentRotation));
+    }
+    function renderHistory() {
+      prizeHistoryEl.innerHTML = '';
+      if (!prizeHistory.length) {
+        const li = document.createElement('li');
+        li.className = 'history-item';
+        li.textContent = 'Пока призов нет';
+        prizeHistoryEl.appendChild(li);
+        currentPrizeEl.textContent = 'Пока нет результата';
+      } else {
+        prizeHistory.forEach((item) => {
+          const li = document.createElement('li');
+          li.className = 'history-item';
+          li.textContent = item.time + ' — ' + item.prize;
+          prizeHistoryEl.appendChild(li);
+        });
+        currentPrizeEl.textContent = prizeHistory[prizeHistory.length - 1].prize;
+      }
+      spinCountEl.textContent = spinCount;
+      historyCountEl.textContent = prizeHistory.length;
+    }
+    function spinToPrize(slot) {
+      const index = wheelSlots.findIndex(s => s.id === slot.id);
+      const segmentAngle = 360 / wheelSlots.length;
+      const slotCenter = index * segmentAngle + segmentAngle / 2;
+      const extraSpins = 9 * 360;
+      const randomOffset = (Math.random() - 0.5) * (segmentAngle * 0.22);
+      const targetWithinCircle = 360 - slotCenter + randomOffset;
+      currentRotation += extraSpins + targetWithinCircle;
+      wheel.style.transform = 'rotate(' + currentRotation + 'deg)';
+    }
+    function launchConfetti() {
+      const colors = ['#fff6da', '#f6d995', '#d0a24d', '#8d6623'];
+      const count = 88;
+      confettiBox.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const piece = document.createElement('span');
+        piece.className = 'piece';
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.left = (i < count / 2 ? 5 + Math.random() * 15 : 80 + Math.random() * 15) + 'vw';
+        piece.style.top = (65 + Math.random() * 14) + 'vh';
+        const dir = i < count / 2 ? 1 : -1;
+        piece.style.setProperty('--tx', (dir * (130 + Math.random() * 320)) + 'px');
+        piece.style.setProperty('--ty', (-220 - Math.random() * 380) + 'px');
+        piece.style.setProperty('--rot', ((Math.random() * 860 - 430)) + 'deg');
+        piece.style.animationDelay = (Math.random() * 160) + 'ms';
+        confettiBox.appendChild(piece);
+      }
+      setTimeout(() => { confettiBox.innerHTML = ''; }, 2000);
+    }
+    function openModal(prize, time) {
+      modalPrize.textContent = prize;
+      modalTime.textContent = time;
+      winModal.classList.add('show');
+    }
+
+    closeModal.addEventListener('click', () => winModal.classList.remove('show'));
+    winModal.addEventListener('click', (e) => { if (e.target === winModal) winModal.classList.remove('show'); });
+
+    spinBtn.addEventListener('click', () => {
+      if (isSpinning) return;
+      isSpinning = true;
+      spinBtn.disabled = true;
+      winModal.classList.remove('show');
+
+      const nextSpinNumber = spinCount + 1;
+      const prize = choosePrize(nextSpinNumber);
+      spinToPrize(prize);
+
+      setTimeout(() => {
+        spinCount = nextSpinNumber;
+        const now = formatDateTime(new Date());
+        prizeHistory.push({ spin: spinCount, prize: prize.text, time: now });
+        renderHistory();
+        saveState();
+        launchConfetti();
+        openModal(prize.text, now);
+        isSpinning = false;
+        spinBtn.disabled = false;
+      }, 8800);
+    });
+
+    const savedTheme = localStorage.getItem('felis-theme') || 'light';
+    applyTheme(savedTheme);
+    createLabels();
+    createLights();
+    buildStars();
+    wheel.style.transform = 'rotate(' + currentRotation + 'deg)';
+    renderHistory();
+  </script>
+</body>
+</html>
