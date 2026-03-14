@@ -379,10 +379,13 @@
     </div>
   </div>
   <div class="top-actions">
-    <a class="ghost-link" href="tel:+998945429860">Позвонить</a>
-    <button class="menu-btn" id="menuBtn" type="button" aria-label="Открыть панель управления" aria-expanded="false">
-      <span class="lines"><span></span><span></span><span></span></span>
-    </button>
+<button class="menu-btn" id="menuBtn" aria-expanded="false">
+  <span class="lines">
+    <span></span>
+    <span></span>
+    <span></span>
+  </span>
+</button>
   </div>
 </header>
 
@@ -652,55 +655,42 @@
    DRAWER + THEME
    ========================= */
 const body = document.body;
+const menuBtn = document.getElementById('menuBtn');
 const drawer = document.getElementById('drawer');
 const overlay = document.getElementById('overlay');
-const menuBtn = document.getElementById('menuBtn');
 const closeDrawer = document.getElementById('closeDrawer');
-const themeButtons = document.querySelectorAll('.theme-opt');
-const themeKey = 'felis-theme';
+const lightBtn = document.getElementById('lightBtn');
+const darkBtn = document.getElementById('darkBtn');
 
-function syncThemeButtons(theme) {
-  themeButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.theme === theme));
-}
-
-function applyTheme(theme) {
+function applyTheme(theme){
   body.classList.toggle('dark', theme === 'dark');
-  syncThemeButtons(theme);
-  localStorage.setItem(themeKey, theme);
+  localStorage.setItem('felis-theme', theme);
+
+  lightBtn.classList.toggle('active', theme !== 'dark');
+  darkBtn.classList.toggle('active', theme === 'dark');
 }
 
-const savedTheme = localStorage.getItem(themeKey) || 'light';
-applyTheme(savedTheme);
-
-themeButtons.forEach(btn => {
-  btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
-});
-
-function openDrawer() {
+function openDrawer(){
   drawer.classList.add('open');
   overlay.classList.add('open');
   body.classList.add('menu-open');
-  drawer.setAttribute('aria-hidden', 'false');
-  menuBtn.setAttribute('aria-expanded', 'true');
 }
 
-function closeDrawerPanel() {
+function closeMenu(){
   drawer.classList.remove('open');
   overlay.classList.remove('open');
   body.classList.remove('menu-open');
-  drawer.setAttribute('aria-hidden', 'true');
-  menuBtn.setAttribute('aria-expanded', 'false');
 }
 
-menuBtn.addEventListener('click', () => {
-  if (drawer.classList.contains('open')) closeDrawerPanel();
-  else openDrawer();
-});
-closeDrawer.addEventListener('click', closeDrawerPanel);
-overlay.addEventListener('click', closeDrawerPanel);
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeDrawerPanel();
-});
+menuBtn.addEventListener('click', () => drawer.classList.contains('open') ? closeMenu() : openDrawer());
+closeDrawer.addEventListener('click', closeMenu);
+overlay.addEventListener('click', closeMenu);
+
+lightBtn.addEventListener('click', () => applyTheme('light'));
+darkBtn.addEventListener('click', () => applyTheme('dark'));
+
+const savedTheme = localStorage.getItem('felis-theme') || 'light';
+applyTheme(savedTheme);
 
 /* =========================
    CATEGORIES (open/close)
