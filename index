@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<title>Felis Lenses</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+  :root{
+    --bg:#f6f3ee;
+    --bg-soft:#ede7df;
+    --panel:#ffffffcc;
+    --panel-strong:#ffffffee;
+    --text:#171514;
+    --muted:#736c64;
+    --line:#ddd2c3;
+    --gold1:#f6d995;
+    --gold2:#d0a24d;
+    --gold3:#8d6623;
+    --gold4:#fff0c8;
+    --shadow:0 24px 60px rgba(47,34,14,.12);
+    --overlay:rgba(18,16,14,.34);
+    --card-grad:linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.92));
+    --button1:#2a2a2d;
+    --button2:#101115;
+    --banner-bg:#111;
+  }
+
+  body.dark{
+    --bg:#090a0d;
+    --bg-soft:#111318;
+    --panel:rgba(17,20,26,.78);
+    --panel-strong:rgba(16,20,27,.94);
+    --text:#f4f1eb;
+    --muted:#a8a198;
+    --line:rgba(255,255,255,.09);
+    --gold1:#f6d995;
+    --gold2:#d0a24d;
+    --gold3:#7d591d;
+    --gold4:#fff0c8;
+    --shadow:0 28px 80px rgba(0,0,0,.42);
+    --overlay:rgba(0,0,0,.56);
+    --card-grad:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    --button1:#2a2c31;
+    --button2:#07080b;
+    --banner-bg:#020304;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: Inter, Arial, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(circle at top left, rgba(208,162,77,.14), transparent 24%),
+      radial-gradient(circle at bottom right, rgba(208,162,77,.09), transparent 22%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
+    transition: background .25s ease, color .25s ease;
+    overflow-x: hidden;
+  }
+  body.menu-open { overflow: hidden; }
+  a { color: inherit; text-decoration: none; }
+
+  .overlay{
+    position: fixed; inset: 0; background: var(--overlay);
+    opacity: 0; visibility: hidden; transition: .22s ease; z-index: 40;
+  }
+  .overlay.open{ opacity: 1; visibility: visible; }
+
+  .drawer{
+    position: fixed; right: 0; top: 0; z-index: 50; width: min(380px, 90vw); height: 100vh;
+    background: var(--panel-strong); border-left: 1px solid var(--line);
+    transform: translateX(100%); transition: .24s ease;
+    padding: 20px 16px 18px; display: flex; flex-direction: column; gap: 14px;
+    backdrop-filter: blur(18px); box-shadow: var(--shadow);
+  }
+  .drawer.open{ transform: translateX(0); }
+  .drawer-head{ display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .drawer-title{ font-size: 20px; font-weight: 800; }
+
+  .close-btn, .menu-btn{
+    width: 50px; height: 50px; border: none; border-radius: 15px; cursor: pointer;
+    background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.04));
+    box-shadow: inset 0 1px 1px rgba(255,255,255,.24), 0 0 0 1px var(--line);
+    color: var(--text);
+  }
+  .menu-btn{ display: grid; place-items: center; flex-shrink: 0; }
+  .lines{ width: 22px; display: flex; flex-direction: column; gap: 5px; }
+  .lines span{ height: 2.5px; border-radius: 999px; background: var(--text); transition: .22s ease; }
+  .menu-btn[aria-expanded="true"] .lines span:nth-child(1){ transform: translateY(7px) rotate(45deg); }
+  .menu-btn[aria-expanded="true"] .lines span:nth-child(2){ opacity: 0; }
+  .menu-btn[aria-expanded="true"] .lines span:nth-child(3){ transform: translateY(-8px) rotate(-45deg); }
+
+  .drawer-card{
+    padding: 16px; border-radius: 20px; border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
+  }
+  .drawer-label{
+    font-size: 13px; color: var(--muted); margin-bottom: 10px;
+    text-transform: uppercase; letter-spacing: .1em;
+  }
+  .theme-toggle{
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    background: rgba(255,255,255,.05); padding: 6px; border-radius: 16px; border: 1px solid var(--line);
+  }
+  .theme-opt{
+    min-height: 44px; border: none; border-radius: 12px; cursor: pointer;
+    font-weight: 800; background: transparent; color: var(--text);
+  }
+  .theme-opt.active{
+    background: linear-gradient(180deg, var(--gold1), var(--gold2) 52%, var(--gold3));
+    color: #12110e; box-shadow: inset 0 1px 1px rgba(255,255,255,.45);
+  }
+  .drawer-link{
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 0;
+  }
+  .drawer-link + .drawer-link{ border-top: 1px solid var(--line); }
+  .link-note{ font-size: 13px; color: var(--muted); }
+
+  .shell{
+    width: min(1280px, calc(100% - 24px));
+    margin: 12px auto;
+    border-radius: 30px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    backdrop-filter: blur(16px);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    position: relative;
+  }
+
+  header{
+    position: sticky; top: 0; z-index: 20;
+    background: var(--panel-strong);
+    padding: 18px 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(16px);
+  }
+
+  .brand{ display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .brand-logo{
+    width: 58px; height: 58px; object-fit: contain; border-radius: 18px; flex-shrink: 0;
+    background: linear-gradient(145deg, var(--gold4), var(--gold2) 38%, var(--gold3) 100%);
+    padding: 4px;
+    box-shadow: inset 0 1px 1px rgba(255,255,255,.55), 0 10px 24px rgba(208,162,77,.24);
+  }
+  .header-center { min-width: 0; }
+  h1 { margin: 0; font-size: clamp(26px, 5vw, 36px); letter-spacing: -.04em; }
+  .slogan {
+    color: var(--muted); font-size: 12px; letter-spacing: .18em;
+    text-transform: uppercase; margin-top: 4px;
+  }
+
+  .top-actions{ display: flex; align-items: center; gap: 10px; }
+  .ghost-link{
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0 16px; min-height: 48px; border-radius: 16px;
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+    font-weight: 700;
+  }
+
+  .content-wrap{ padding: 18px 18px 0; }
+
+  .slider {
+    width: min(100%, 1160px);
+    aspect-ratio: 2 / 1;
+    margin: 0 auto 22px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 26px;
+    background: var(--banner-bg);
+    border: 1px solid var(--line);
+    user-select: none;
+    touch-action: pan-y;
+    box-shadow: var(--shadow);
+  }
+  .slides { display: flex; height: 100%; transition: transform 0.55s ease-in-out; will-change: transform; }
+  .slide { min-width: 100%; height: 100%; }
+  .slide img {
+    width: 100%; height: 100%; object-fit: contain; background: var(--banner-bg); display: block;
+  }
+  .progress {
+    position: absolute; top: 14px; left: 14px; right: 14px; display: flex; gap: 8px; z-index: 10;
+  }
+  .progress .bar {
+    flex: 1; height: 4px; background: rgba(255,255,255,0.25); border-radius: 999px; overflow: hidden;
+  }
+  .progress .fill {
+    display: block; height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--gold1), var(--gold2), var(--gold4));
+  }
+
+  section {
+    max-width: 1160px;
+    margin: auto;
+    padding: 0 20px 34px;
+  }
+
+  .category {
+    background: var(--card-grad), var(--panel-strong);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    margin-bottom: 18px;
+    padding: 18px 18px 20px;
+    box-shadow: var(--shadow);
+  }
+  .category-header {
+    display: flex; justify-content: space-between; align-items: center; cursor: pointer; gap: 12px;
+  }
+  .category-header h2 {
+    margin: 0; font-size: 18px; letter-spacing: .12em; text-transform: uppercase;
+  }
+  .arrow {
+    width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center;
+    font-size: 22px; transition: transform 0.25s ease;
+    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
+    border: 1px solid var(--line);
+  }
+  .category.open .arrow { transform: rotate(180deg); }
+
+  .products {
+    display: none;
+    margin-top: 16px;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  }
+  .category.open .products { display: grid; }
+
+  .product {
+    background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+    border-radius: 22px;
+    overflow: hidden;
+    text-align: center;
+    border: 1px solid var(--line);
+    box-shadow: 0 10px 30px rgba(0,0,0,.06);
+  }
+  .product img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    cursor: pointer;
+    display: block;
+    background: rgba(0,0,0,.05);
+  }
+
+  .price {
+    padding: 14px 12px 16px;
+    font-weight: 700;
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .old-price {
+    color: #cf4d45;
+    text-decoration: line-through;
+    font-weight: 600;
+    opacity: 0.95;
+  }
+  .new-price {
+    color: var(--text);
+    font-weight: 800;
+  }
+
+  .fullscreen {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: flex;
+    align-items: center; justify-content: center; z-index: 9999; cursor: pointer; padding: 20px;
+  }
+  .fullscreen img {
+    max-width: min(95vw, 920px); max-height: 92vh; border-radius: 20px; box-shadow: var(--shadow);
+  }
+
+  footer {
+    background: transparent;
+    color: var(--text);
+    text-align: center;
+    padding: 12px 20px 34px;
+  }
+  .footer-card{
+    max-width: 1160px; margin: 0 auto;
+    border: 1px solid var(--line); border-radius: 24px;
+    background: var(--card-grad), var(--panel-strong);
+    box-shadow: var(--shadow);
+    padding: 24px 20px;
+  }
+  .footer-card p{ margin: 0 0 14px; font-weight: 700; }
+  .footer-links{ display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .footer-links a{
+    border: 1px solid var(--line); border-radius: 16px; padding: 12px 18px;
+    background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+  }
+
+  @media (max-width: 760px){
+    .shell{ width: min(100% - 12px, 100%); margin: 6px auto; border-radius: 24px; }
+    header{ padding: 14px 14px; }
+    .brand-logo{ width: 50px; height: 50px; border-radius: 16px; }
+    .ghost-link{ display: none; }
+    .content-wrap{ padding: 12px 12px 0; }
+    section{ padding: 0 12px 24px; }
+    .slider{ border-radius: 22px; margin-bottom: 18px; }
+    .category{ border-radius: 20px; padding: 16px; }
+    .products{ grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 12px; }
+    .product{ border-radius: 18px; }
+    .arrow{ width: 38px; height: 38px; border-radius: 12px; }
+  }
+</style>
+</head>
+
+<body>
+<div class="overlay" id="overlay"></div>
+
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head">
+    <div class="drawer-title">Панель управления</div>
+    <button class="close-btn" id="closeDrawer" type="button" aria-label="Закрыть">✕</button>
+  </div>
+
+  <div class="drawer-card">
+    <div class="drawer-label">Тема сайта</div>
+    <div class="theme-toggle">
+      <button class="theme-opt active" type="button" data-theme="light">☀ Светлая</button>
+      <button class="theme-opt" type="button" data-theme="dark">🌙 Тёмная</button>
+    </div>
+  </div>
+
+  <div class="drawer-card">
+    <div class="drawer-label">Быстрые действия</div>
+    <a class="drawer-link" href="tel:+998945429860">
+      <span>Позвонить</span>
+      <span class="link-note">+998 94 542 98 60</span>
+    </a>
+    <a class="drawer-link" href="https://t.me/linzy_uzb" target="_blank" rel="noopener">
+      <span>Telegram</span>
+      <span class="link-note">@linzy_uzb</span>
+    </a>
+    <a class="drawer-link" href="https://wa.me/998945429860" target="_blank" rel="noopener">
+      <span>WhatsApp</span>
+      <span class="link-note">написать</span>
+    </a>
+    <a class="drawer-link" href="#footer-socials">
+      <span>Соцсети</span>
+      <span class="link-note">внизу сайта</span>
+    </a>
+  </div>
+</aside>
+
+<div class="shell">
+<header>
+  <div class="brand">
+    <img class="brand-logo" src="logo.png" alt="Логотип">
+    <div class="header-center">
+      <h1>Felis Lenses</h1>
+      <div class="slogan">Онлайн магазин контактных линз</div>
+    </div>
+  </div>
+  <div class="top-actions">
+    <a class="ghost-link" href="tel:+998945429860">Позвонить</a>
+    <button class="menu-btn" id="menuBtn" type="button" aria-label="Открыть панель управления" aria-expanded="false">
+      <span class="lines"><span></span><span></span><span></span></span>
+    </button>
+  </div>
+</header>
+
+<div class="content-wrap">
+
+
+<div class="slider" id="slider">
+  <div class="progress" id="progress"></div>
+
+  <div class="slides" id="slides">
+    <div class="slide"><img src="banner1.jpg" alt="Баннер 1"></div>
+    <div class="slide"><img src="banner2.jpg" alt="Баннер 2"></div>
+    <div class="slide"><img src="banner3.jpg" alt="Баннер 3"></div>
+  </div>
+</div>
+
+<section>
+
+  <div class="category">
+    <div class="category-header">
+      <h2>MAGISTER</h2>
+        <span class="arrow">⌄</span>
+    </div>
+    <div class="products">
+      <div class="product">
+        <img src="sterling gray.jpg" alt="Sterling Gray">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="icy cray.jpg" alt="Icy Cray">
+        <div class="price"><span class="old-price">105 000 сум</span><span class="new-price">73 500 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="graphite.jpg" alt="Graphite">
+        <div class="price"><span class="old-price">105 000 сум</span><span class="new-price">73 500 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="mel.jpg" alt="Mel">
+        <div class="price"><span class="old-price">105 000 сум</span><span class="new-price">73 500 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="ochre.jpg" alt="Ochre">
+        <div class="price"><span class="old-price">105 000 сум</span><span class="new-price">73 500 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="avela.jpg" alt="Avela">
+        <div class="price"><span class="old-price">105 000 сум</span><span class="new-price">73 500 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="crystal.jpg" alt="Crystal">
+        <div class="price"><span class="old-price">105 000 сум</span><span class="new-price">73 500 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="topaz.jpg" alt="Topaz">
+        <div class="price"><span class="old-price">105 000 сум</span><span class="new-price">73 500 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="amber.jpg" alt="Amber">
+        <div class="price"><span class="old-price">105 000 сум</span><span class="new-price">115 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="omg brown.jpg" alt="Omg Brown">
+        <div class="price"><span class="old-price">105 000 сум</span><span class="new-price">125 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="omg gray.jpg" alt="Omg Gray">
+        <div class="price"><span class="old-price">105 000 сум</span><span class="new-price">125 000 сум</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-header">
+      <h2>UYAAI</h2>
+      <span class="arrow">⌄</span>
+    </div>
+    <div class="products">
+      <div class="product">
+        <img src="shikamaru brown.jpg" alt="Shikamaru Brown">
+        <div class="price"><span class="old-price">90 000 сум</span><span class="new-price">45 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="fog ice gray.jpg" alt="Fog Ice Gray">
+        <div class="price"><span class="old-price">90 000 сум</span><span class="new-price">45 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="fog peal gray.jpg" alt="Fog Peal Gray">
+        <div class="price"><span class="old-price">90 000 сум</span><span class="new-price">45 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="dolly raquelle.jpg" alt="Dolly raquelle">
+        <div class="price"><span class="old-price">110 000 сум</span><span class="new-price">55 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="dolly stacie.jpg" alt="Dolly stacie">
+        <div class="price"><span class="old-price">110 000 сум</span><span class="new-price">55 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="apex blue.jpg" alt="Apex Blue">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="apex green.jpg" alt="Apex Green">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="apex gray.jpg" alt="Apex Gray">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="dolly teresa.jpg" alt="Dolly teresa">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="aoki caramel.jpg" alt="Aoki Caramel ">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="aoki gray.jpg" alt="Aoki Gray">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="big eye black.jpg" alt="Big Eye Black">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="k4 violet.jpg" alt="K4 Violet">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="k4 blue.jpg" alt="K4 Blue ">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="k4 gray.jpg" alt="K4 Gray">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="pattaya blue.jpg" alt="Pattaya Blue">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="diamonds brown.jpg" alt="Diamonds Brown">
+        <div class="price"><span class="old-price">130 000 сум</span><span class="new-price">65 000 сум</span></div>
+      </div>
+    </div>
+  </div>
+
+<div class="category">
+    <div class="category-header">
+      <h2>MILK CREEK</h2>
+      <span class="arrow">⌄</span>
+    </div>
+    <div class="products">
+      <div class="product">
+        <img src="gullah rome.jpg" alt="Gullah Rome">
+        <div class="price"><span class="old-price">140 000 сум</span><span class="new-price">84 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="frozen blue grey.jpg" alt="Frozen Blue Grey">
+        <div class="price"><span class="old-price">140 000 сум</span><span class="new-price">84 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="centripetal gravity.jpg" alt="Centripetal Gravity">
+        <div class="price"><span class="old-price">140 000 сум</span><span class="new-price">84 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="night magics.jpg" alt="Night Magics">
+        <div class="price"><span class="old-price">140 000 сум</span><span class="new-price">84 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="koi red.jpg" alt="Koi Red">
+        <div class="price"><span class="old-price">140 000 сум</span><span class="new-price">84 000 сум</span></div>
+      </div>
+    </div>
+  </div>
+
+<div class="category">
+    <div class="category-header">
+      <h2>FRESH GO</h2>
+      <span class="arrow">⌄</span>
+    </div>
+    <div class="products">
+      <div class="product">
+        <img src="nonno violet.jpg" alt="Nonno violet">
+        <div class="price"><span class="old-price">130 000 сум</span><span class="new-price">78 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="nonno gray.jpg" alt="Nonno gray">
+        <div class="price"><span class="old-price">130 000 сум</span><span class="new-price">78 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="nonno hazel.jpg" alt="Nonno hazel">
+        <div class="price"><span class="old-price">130 000 сум</span><span class="new-price">78 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="flame blue.jpg" alt="Flame Blue">
+        <div class="price"><span class="old-price">130 000 сум</span><span class="new-price">78 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="ring white.jpg" alt="Ring White">
+        <div class="price"><span class="old-price">130 000 сум</span><span class="new-price">78 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="white out.jpg" alt="White Out">
+        <div class="price"><span class="old-price">130 000 сум</span><span class="new-price">78 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="white b edge.jpg" alt="White B Edge">
+        <div class="price"><span class="old-price">130 000 сум</span><span class="new-price">78 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="white mesh.jpg" alt="White Mesh">
+        <div class="price"><span class="old-price">130 000 сум</span><span class="new-price">78 000 сум</span></div>
+      </div>
+    </div>
+  </div>
+
+<div class="category">
+    <div class="category-header">
+      <h2>KSSEYE</h2>
+      <span class="arrow">⌄</span>
+    </div>
+    <div class="products">
+      <div class="product">
+        <img src="clacler brown.jpg" alt="Clacler Brown">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="clacler blue.jpg" alt="Clacler Blue">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="zurich green.jpg" alt="Zurich Geen">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="leopard gray.jpg" alt=Leopard gray">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+      <div class="product">
+        <img src="russiangirl blue.jpg" alt="Russiangirl blue">
+        <div class="price"><span class="old-price">120 000 сум</span><span class="new-price">60 000 сум</span></div>
+      </div>
+    </div>
+  </div>
+
+</section>
+</div>
+
+<footer id="footer-socials">
+  <div class="footer-card">
+  <p>Мы в соцсетях</p>
+  <div class="footer-links">
+    <a href="https://www.instagram.com/linzy.tashkent" target="_blank" rel="noopener">Instagram</a>
+    <a href="https://wa.me/998945429860" target="_blank" rel="noopener">WhatsApp</a>
+    <a href="https://t.me/linzy_uzb" target="_blank" rel="noopener">Telegram</a>
+  </div>
+  </div>
+</footer>
+</div>
+
+<script>
+
+
+/* =========================
+   DRAWER + THEME
+   ========================= */
+const body = document.body;
+const drawer = document.getElementById('drawer');
+const overlay = document.getElementById('overlay');
+const menuBtn = document.getElementById('menuBtn');
+const closeDrawer = document.getElementById('closeDrawer');
+const themeButtons = document.querySelectorAll('.theme-opt');
+const themeKey = 'felis-theme';
+
+function syncThemeButtons(theme) {
+  themeButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.theme === theme));
+}
+
+function applyTheme(theme) {
+  body.classList.toggle('dark', theme === 'dark');
+  syncThemeButtons(theme);
+  localStorage.setItem(themeKey, theme);
+}
+
+const savedTheme = localStorage.getItem(themeKey) || 'light';
+applyTheme(savedTheme);
+
+themeButtons.forEach(btn => {
+  btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
+});
+
+function openDrawer() {
+  drawer.classList.add('open');
+  overlay.classList.add('open');
+  body.classList.add('menu-open');
+  drawer.setAttribute('aria-hidden', 'false');
+  menuBtn.setAttribute('aria-expanded', 'true');
+}
+
+function closeDrawerPanel() {
+  drawer.classList.remove('open');
+  overlay.classList.remove('open');
+  body.classList.remove('menu-open');
+  drawer.setAttribute('aria-hidden', 'true');
+  menuBtn.setAttribute('aria-expanded', 'false');
+}
+
+menuBtn.addEventListener('click', () => {
+  if (drawer.classList.contains('open')) closeDrawerPanel();
+  else openDrawer();
+});
+closeDrawer.addEventListener('click', closeDrawerPanel);
+overlay.addEventListener('click', closeDrawerPanel);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDrawerPanel();
+});
+
+/* =========================
+   CATEGORIES (open/close)
+   ========================= */
+document.querySelectorAll('.category-header').forEach(header => {
+  header.addEventListener('click', () => {
+    header.parentElement.classList.toggle('open');
+  });
+});
+
+/* =========================
+   FULLSCREEN IMAGE
+   ========================= */
+document.addEventListener('click', e => {
+  const img = e.target;
+  if (img && img.tagName === 'IMG' && img.closest('.product')) {
+    e.stopPropagation();
+    const fs = document.createElement('div');
+    fs.className = 'fullscreen';
+    fs.innerHTML = `<img src="${img.src}" alt="Фото">`;
+    fs.addEventListener('click', () => fs.remove());
+    document.body.appendChild(fs);
+  }
+});
+
+/* =========================
+   SLIDER + STORY PROGRESS
+   ========================= */
+const slidesEl = document.getElementById('slides');
+const sliderEl = document.getElementById('slider');
+const progressEl = document.getElementById('progress');
+
+const total = slidesEl.children.length;
+let index = 0;
+
+const durationMs = 8000;
+
+let rafId = null;
+let lastTs = 0;
+let elapsedMs = 0;
+let paused = false;
+
+/* create bars */
+for (let i = 0; i < total; i++) {
+  const bar = document.createElement('div');
+  bar.className = 'bar';
+  const fill = document.createElement('span');
+  fill.className = 'fill';
+  bar.appendChild(fill);
+  progressEl.appendChild(bar);
+}
+
+function paintProgress() {
+  const fills = progressEl.querySelectorAll('.fill');
+  fills.forEach((f, i) => {
+    if (i < index) f.style.width = '100%';
+    else if (i > index) f.style.width = '0%';
+    else {
+      const pct = Math.min(100, (elapsedMs / durationMs) * 100);
+      f.style.width = pct + '%';
+    }
+  });
+}
+
+function setSlide(i) {
+  index = (i + total) % total;
+  slidesEl.style.transform = `translateX(-${index * 100}%)`;
+  elapsedMs = 0;
+  lastTs = 0;
+  paintProgress();
+}
+
+function tick(ts) {
+  if (paused) {
+    rafId = requestAnimationFrame(tick);
+    return;
+  }
+  if (!lastTs) lastTs = ts;
+  const delta = ts - lastTs;
+  lastTs = ts;
+
+  elapsedMs += delta;
+
+  if (elapsedMs >= durationMs) {
+    setSlide(index + 1); // строго вправо
+  } else {
+    paintProgress();
+  }
+
+  rafId = requestAnimationFrame(tick);
+}
+
+function start() {
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(tick);
+}
+
+function pause() { paused = true; }
+function resume() { paused = false; lastTs = 0; }
+
+/* Swipe + hold-to-pause */
+let startX = 0;
+let isDragging = false;
+
+sliderEl.addEventListener('touchstart', (e) => {
+  pause();
+  isDragging = true;
+  startX = e.touches[0].clientX;
+});
+
+sliderEl.addEventListener('touchend', (e) => {
+  if (!isDragging) return;
+  isDragging = false;
+
+  const endX = e.changedTouches[0].clientX;
+  const diff = startX - endX;
+
+  if (diff > 50) setSlide(index + 1);
+  else if (diff < -50) setSlide(index - 1);
+
+  resume();
+});
+
+sliderEl.addEventListener('mousedown', (e) => {
+  pause();
+  isDragging = true;
+  startX = e.clientX;
+});
+
+window.addEventListener('mouseup', (e) => {
+  if (!isDragging) return;
+  isDragging = false;
+
+  const endX = e.clientX;
+  const diff = startX - endX;
+
+  if (diff > 50) setSlide(index + 1);
+  else if (diff < -50) setSlide(index - 1);
+
+  resume();
+});
+
+/* INIT */
+setSlide(0);
+start();
+</script>
+
+</body>
+</html>
