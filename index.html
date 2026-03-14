@@ -753,6 +753,19 @@ function paintProgress() {
       f.style.width = pct + '%';
     }
   });
+      }
+
+    function buildStars() {
+      for (let i = 0; i < 42; i++) {
+        const star = document.createElement('span');
+        star.className = 'spark';
+        star.style.left = (Math.random() * 100) + 'vw';
+        star.style.top = (40 + Math.random() * 65) + 'vh';
+        star.style.animationDuration = (4 + Math.random() * 8) + 's';
+        star.style.animationDelay = (Math.random() * 6) + 's';
+        star.style.opacity = (0.15 + Math.random() * 0.5);
+        sparkles.appendChild(star);
+      }
 }
 
 function setSlide(i) {
