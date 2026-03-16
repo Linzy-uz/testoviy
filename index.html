@@ -12,8 +12,8 @@
   :root{
     --bg:#f6f3ee;
     --bg-soft:#ede7df;
-    --panel:#ffffffcc;
-    --panel-strong:#ffffffee;
+    --panel:#ffffffc7;
+    --panel-strong:#fffffff0;
     --text:#171514;
     --muted:#736c64;
     --line:#ddd2c3;
@@ -23,7 +23,7 @@
     --gold4:#fff0c8;
     --shadow:0 24px 60px rgba(47,34,14,.12);
     --overlay:rgba(18,16,14,.34);
-    --card-grad:linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.92));
+    --card-grad:linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,255,255,.94));
     --button1:#2a2a2d;
     --button2:#101115;
     --banner-bg:#111;
@@ -32,8 +32,8 @@
   body.dark{
     --bg:#090a0d;
     --bg-soft:#111318;
-    --panel:rgba(17,20,26,.78);
-    --panel-strong:rgba(16,20,27,.94);
+    --panel:rgba(17,21,28,.8);
+    --panel-strong:rgba(15,19,26,.95);
     --text:#f4f1eb;
     --muted:#a8a198;
     --line:rgba(255,255,255,.09);
@@ -71,6 +71,29 @@
   }
   .overlay.open{ opacity: 1; visibility: visible; }
 
+  .sparkles{
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 3;
+  }
+  .spark{
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.9);
+    box-shadow: 0 0 10px rgba(255,255,255,.86);
+    animation: floatStar linear infinite;
+    opacity: .45;
+  }
+  @keyframes floatStar{
+    from{ transform:translateY(0); opacity:.1; }
+    50%{ opacity:.8; }
+    to{ transform:translateY(-120px); opacity:.08; }
+  }
+
   .drawer{
     position: fixed; right: 0; top: 0; z-index: 50; width: min(380px, 90vw); height: 100vh;
     background: var(--panel-strong); border-left: 1px solid var(--line);
@@ -97,7 +120,7 @@
 
   .drawer-card{
     padding: 16px; border-radius: 20px; border: 1px solid var(--line);
-    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
+    background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.045));
   }
   .drawer-label{
     font-size: 13px; color: var(--muted); margin-bottom: 10px;
@@ -127,10 +150,11 @@
     border-radius: 30px;
     border: 1px solid var(--line);
     background: var(--panel);
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(18px);
     box-shadow: var(--shadow);
     overflow: hidden;
     position: relative;
+    z-index: 2;
   }
 
   header{
@@ -139,7 +163,7 @@
     padding: 18px 20px;
     display: flex; align-items: center; justify-content: space-between; gap: 14px;
     border-bottom: 1px solid var(--line);
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(18px);
   }
 
   .brand{ display: flex; align-items: center; gap: 14px; min-width: 0; }
@@ -161,7 +185,7 @@
     display: inline-flex; align-items: center; justify-content: center;
     padding: 0 16px; min-height: 48px; border-radius: 16px;
     border: 1px solid var(--line);
-    background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.035));
     font-weight: 700;
   }
 
@@ -219,7 +243,7 @@
   .arrow {
     width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center;
     font-size: 22px; transition: transform 0.25s ease;
-    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
+    background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.045));
     border: 1px solid var(--line);
   }
   .category.open .arrow { transform: rotate(180deg); }
@@ -233,7 +257,7 @@
   .category.open .products { display: grid; }
 
   .product {
-    background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.035));
     border-radius: 22px;
     overflow: hidden;
     text-align: center;
@@ -294,7 +318,7 @@
   .footer-links{ display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
   .footer-links a{
     border: 1px solid var(--line); border-radius: 16px; padding: 12px 18px;
-    background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.035));
   }
 
   @media (max-width: 760px){
@@ -315,6 +339,7 @@
 
 <body>
 <div class="overlay" id="overlay"></div>
+<div class="sparkles" id="sparkles"></div>
 
 <aside class="drawer" id="drawer" aria-hidden="true">
 
@@ -661,6 +686,7 @@ const overlay = document.getElementById('overlay');
 const closeDrawer = document.getElementById('closeDrawer');
 const lightBtn = document.getElementById('lightBtn');
 const darkBtn = document.getElementById('darkBtn');
+const sparkles = document.getElementById('sparkles');
 
 function applyTheme(theme){
   body.classList.toggle('dark', theme === 'dark');
@@ -686,8 +712,8 @@ menuBtn.addEventListener('click', () => drawer.classList.contains('open') ? clos
 closeDrawer.addEventListener('click', closeMenu);
 overlay.addEventListener('click', closeMenu);
 
-lightBtn.addEventListener('click', () => applyTheme('light'));
-darkBtn.addEventListener('click', () => applyTheme('dark'));
+lightBtn.addEventListener('click', () => { applyTheme('light'); buildStars(); });
+darkBtn.addEventListener('click', () => { applyTheme('dark'); buildStars(); });
 
 const savedTheme = localStorage.getItem('felis-theme') || 'light';
 applyTheme(savedTheme);
@@ -753,19 +779,23 @@ function paintProgress() {
       f.style.width = pct + '%';
     }
   });
-      }
+}
 
-    function buildStars() {
-      for (let i = 0; i < 42; i++) {
-        const star = document.createElement('span');
-        star.className = 'spark';
-        star.style.left = (Math.random() * 100) + 'vw';
-        star.style.top = (40 + Math.random() * 65) + 'vh';
-        star.style.animationDuration = (4 + Math.random() * 8) + 's';
-        star.style.animationDelay = (Math.random() * 6) + 's';
-        star.style.opacity = (0.15 + Math.random() * 0.5);
-        sparkles.appendChild(star);
-      }
+function buildStars() {
+  if (!sparkles) return;
+  sparkles.innerHTML = '';
+  if (!body.classList.contains('dark')) return;
+
+  for (let i = 0; i < 42; i++) {
+    const star = document.createElement('span');
+    star.className = 'spark';
+    star.style.left = (Math.random() * 100) + 'vw';
+    star.style.top = (40 + Math.random() * 65) + 'vh';
+    star.style.animationDuration = (4 + Math.random() * 8) + 's';
+    star.style.animationDelay = (Math.random() * 6) + 's';
+    star.style.opacity = (0.15 + Math.random() * 0.5);
+    sparkles.appendChild(star);
+  }
 }
 
 function setSlide(i) {
@@ -788,7 +818,7 @@ function tick(ts) {
   elapsedMs += delta;
 
   if (elapsedMs >= durationMs) {
-    setSlide(index + 1); // строго вправо
+    setSlide(index + 1);
   } else {
     paintProgress();
   }
@@ -848,6 +878,7 @@ window.addEventListener('mouseup', (e) => {
 
 /* INIT */
 setSlide(0);
+buildStars();
 start();
 </script>
 
