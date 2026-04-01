@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Timeline Planner Mobile</title>
+  <style>
+    :root{
+      --bg0:#070707;
+      --bg1:#101010;
+      --bg2:#171717;
+      --text:#f2f2f2;
+      --muted:#b5b5b5;
+      --silver:#d8d8d8;
+      --todayA:rgba(255,255,255,.08);
+      --todayB:rgba(255,255,255,.03);
+      --dayA:rgba(255,255,255,.010);
+      --dayB:rgba(255,255,255,.025);
+      --red:#ff3b30;
+      --timeW:84px;
+      --headH:74px;
+      --hourH:60px;
+      --rows:24;
+      --line:rgba(255,255,255,.09);
+      --lineSoft:rgba(255,255,255,.05);
+      --dayMin:130px;
+    }
+
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(900px 500px at 15% -10%, rgba(255,255,255,.06), transparent 45%),
+        radial-gradient(900px 500px at 100% 0%, rgba(255,255,255,.04), transparent 45%),
+        linear-gradient(180deg,var(--bg2),var(--bg1) 55%,var(--bg0));
+      overflow:hidden;
+    }
+
+    .app{height:100%;padding:10px}
+    .shell{
+      height:100%;
+      position:relative;
+      overflow:hidden;
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      backdrop-filter: blur(18px) saturate(118%);
+      -webkit-backdrop-filter: blur(18px) saturate(118%);
+      box-shadow:0 20px 56px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
+    .planner-wrap{position:relative;height:100%;overflow:hidden}
+    .planner-scroll{
+      height:100%;
+      overflow:auto;
+      position:relative;
+      overscroll-behavior:contain;
+      background:linear-gradient(180deg, rgba(255,255,255,.015), rgba(255,255,255,.005));
+      touch-action:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+    .planner{
+      width:max(calc(var(--timeW) + 7 * var(--dayMin)), 100%);
+      min-height:calc(var(--headH) + var(--rows) * var(--hourH));
+      position:relative;
+      transform-origin: top left;
+      will-change: transform;
+    }
+
+    .grid-head{
+      position:sticky;
+      top:0;
+      z-index:40;
+      display:grid;
+      grid-template-columns: var(--timeW) repeat(7, minmax(var(--dayMin), 1fr));
+      background:linear-gradient(180deg, rgba(12,12,12,.98), rgba(18,18,18,.92));
+      border-bottom:1px solid var(--line);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .head-cell{
+      min-height:var(--headH);
+      border-right:1px solid var(--lineSoft);
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      overflow:hidden;
+    }
+    .head-cell:first-child{
+      position:sticky;
+      left:0;
+      z-index:46;
+      justify-content:center;
+      color:var(--muted);
+      font-size:12px;
+      letter-spacing:.5px;
+      background:linear-gradient(180deg, rgba(12,12,12,.995), rgba(18,18,18,.97));
+      border-right:1px solid var(--line);
+      box-shadow:2px 0 0 rgba(255,255,255,.03);
+    }
+    .head-cell:not(:first-child){
+      background:linear-gradient(180deg, rgba(255,255,255,.028), rgba(255,255,255,.012));
+    }
+    .head-cell.today::before{
+      content:"";
+      position:absolute;
+      inset:6px 6px;
+      border-radius:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.035));
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .head-day{position:relative;z-index:2;display:flex;flex-direction:column;gap:4px;padding:0 6px}
+    .head-day .dow{font-size:12px;color:var(--muted)}
+    .head-day .dom{font-size:16px;font-weight:800;color:var(--silver);line-height:1.1}
+
+    .nav-week{
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%);
+      width:34px;height:34px;
+      border:none;border-radius:12px;
+      cursor:pointer;
+      color:var(--text);
+      font-size:18px;font-weight:800;
+      background:linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.07));
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 8px 16px rgba(0,0,0,.18);
+      z-index:3;
+    }
+    .nav-week.left{left:6px}
+    .nav-week.right{right:6px}
+
+    .grid-body{
+      display:grid;
+      grid-template-columns: var(--timeW) repeat(7, minmax(var(--dayMin), 1fr));
+      grid-auto-rows:var(--hourH);
+      position:relative;
+    }
+
+    .time-col-bg{
+      position:absolute;
+      top:var(--headH);
+      left:0;
+      width:var(--timeW);
+      height:calc(var(--rows) * var(--hourH));
+      z-index:18;
+      pointer-events:none;
+      background:linear-gradient(180deg, rgba(12,12,12,.995), rgba(18,18,18,.97));
+      border-right:1px solid var(--line);
+      box-shadow:2px 0 0 rgba(255,255,255,.03);
+    }
+
+    .time-cell{
+      position:sticky;
+      left:0;
+      z-index:24;
+      border-right:1px solid var(--line);
+      border-bottom:1px solid var(--lineSoft);
+      background:transparent;
+      color:var(--silver);
+      font-size:14px;
+      font-weight:700;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      user-select:none;
+      position:relative;
+    }
+    .time-cell .label{position:relative;z-index:2}
+    .time-cell .ticks{
+      position:absolute;
+      right:6px; top:0; bottom:0;
+      width:16px;
+      pointer-events:none;
+    }
+    .tick{position:absolute; right:0; height:1px; background:rgba(255,255,255,.22); transform:translateY(-.5px)}
+    .tick.t0{top:0;width:14px;background:rgba(255,255,255,.32)}
+    .tick.t15{top:25%;width:8px}
+    .tick.t30{top:50%;width:11px;background:rgba(255,255,255,.26)}
+    .tick.t45{top:75%;width:8px}
+    .tick.t60{bottom:0;width:14px;background:rgba(255,255,255,.32)}
+
+    .slot{
+      position:relative;
+      border-right:1px solid var(--lineSoft);
+      border-bottom:1px solid var(--lineSoft);
+      cursor:pointer;
+      overflow:hidden;
+    }
+    .slot.col-a{background:linear-gradient(180deg, var(--dayA), rgba(255,255,255,.005))}
+    .slot.col-b{background:linear-gradient(180deg, var(--dayB), rgba(255,255,255,.010))}
+    .slot.today{
+      background:
+        linear-gradient(180deg, var(--todayA), var(--todayB)),
+        linear-gradient(180deg, rgba(255,255,255,.016), rgba(255,255,255,.008));
+    }
+    .slot:hover{box-shadow: inset 0 0 0 1px rgba(255,255,255,.10)}
+    .quarter{position:absolute; left:0; right:0; height:1px; background:rgba(255,255,255,.03); pointer-events:none}
+    .q15{top:25%}
+    .q30{top:50%;background:rgba(255,255,255,.045)}
+    .q45{top:75%}
+
+    .events-layer{
+      position:absolute;
+      top:var(--headH);
+      left:var(--timeW);
+      right:0;
+      height:calc(var(--rows) * var(--hourH));
+      z-index:30;
+      pointer-events:none;
+    }
+    .event{
+      position:absolute;
+      padding:10px 12px;
+      border-radius:16px;
+      overflow:hidden;
+      color:#fff;
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow:0 14px 28px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.12);
+      backdrop-filter: blur(18px) saturate(140%);
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
+      pointer-events:auto;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .event:hover{filter:brightness(1.04)}
+    .event .t{font-size:12px;font-weight:800;line-height:1.2;padding-right:16px}
+    .event .s{font-size:10px;color:rgba(255,255,255,.86)}
+    .event .dot{position:absolute;top:9px;right:9px;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.88)}
+    .event[data-cat="work"]{background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)), linear-gradient(135deg, rgba(201,201,201,.28), rgba(115,115,115,.16))}
+    .event[data-cat="business"]{background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)), linear-gradient(135deg, rgba(177,177,177,.32), rgba(99,99,99,.16))}
+    .event[data-cat="study"]{background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)), linear-gradient(135deg, rgba(166,166,166,.30), rgba(82,82,82,.15))}
+    .event[data-cat="sport"]{background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)), linear-gradient(135deg, rgba(214,214,214,.28), rgba(90,90,90,.14))}
+    .event[data-cat="hobby"]{background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)), linear-gradient(135deg, rgba(192,192,192,.28), rgba(110,110,110,.16))}
+    .event[data-cat="other"]{background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)), linear-gradient(135deg, rgba(230,230,230,.22), rgba(120,120,120,.12))}
+
+    .today-column-overlay{
+      position:absolute;
+      top:var(--headH);
+      height:calc(var(--rows) * var(--hourH));
+      width:calc((100% - var(--timeW)) / 7);
+      z-index:10;
+      pointer-events:none;
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      box-shadow: inset 1px 0 0 rgba(255,255,255,.06), inset -1px 0 0 rgba(255,255,255,.06);
+    }
+
+    .now-line{
+      position:absolute;
+      left:0; right:0;
+      height:2px;
+      background:var(--red);
+      z-index:32;
+      pointer-events:none;
+      display:none;
+    }
+
+    .fab{
+      position:absolute;
+      right:12px; bottom:12px;
+      z-index:50;
+      border:none; cursor:pointer; color:var(--text);
+      border-radius:16px; padding:13px 16px;
+      font-size:13px; font-weight:800;
+      background:linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.07));
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 18px 34px rgba(0,0,0,.20);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    }
+    .hint{
+      position:absolute; left:12px; bottom:12px;
+      z-index:50; padding:9px 11px; border-radius:12px;
+      color:var(--muted); font-size:11px;
+      border:1px solid rgba(255,255,255,.09);
+      background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      max-width:55%;
+    }
+
+    .modal-backdrop{
+      position:fixed;inset:0; display:none;align-items:center;justify-content:center;
+      padding:14px;
+      background:rgba(4,7,12,.54);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      z-index:60;
+    }
+    .modal-backdrop.show{display:flex}
+    .modal{
+      width:min(520px,100%);
+      border-radius:24px;
+      padding:18px;
+      background:linear-gradient(180deg, rgba(20,20,20,.97), rgba(12,12,12,.95));
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:0 26px 70px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.08);
+      backdrop-filter: blur(24px) saturate(120%); -webkit-backdrop-filter: blur(24px) saturate(120%);
+    }
+    .modal h2{margin:0 0 8px;font-size:22px}
+    .modal .sub{margin:0 0 14px;color:var(--muted);font-size:12px}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .field{display:flex;flex-direction:column;gap:7px}
+    .field.full{grid-column:1/-1}
+    .field label{font-size:12px;color:var(--muted);padding-left:2px}
+    .field input,.field select{
+      height:46px;border-radius:14px;border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);color:var(--text);
+      padding:0 12px;font-size:14px;outline:none;
+    }
+    .modal-actions{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .modal-btn{
+      height:46px;border:none;border-radius:14px;cursor:pointer;
+      font-size:14px;font-weight:800;color:var(--text);
+      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.07));
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .modal-btn.primary{background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.09))}
+
+    @media (max-width:720px){
+      .app{padding:8px}
+      .shell{border-radius:18px}
+      :root{--timeW:76px; --headH:68px; --hourH:56px; --dayMin:116px;}
+      .head-day .dom{font-size:14px}
+      .head-day .dow{font-size:11px}
+      .fab{right:10px;bottom:10px}
+      .hint{display:none}
+      .modal{padding:16px}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="shell">
+      <div class="planner-wrap">
+        <div class="planner-scroll" id="plannerScroll">
+          <div class="planner" id="planner">
+            <div class="grid-head" id="gridHead"></div>
+            <div class="grid-body" id="gridBody"></div>
+            <div class="time-col-bg"></div>
+            <div class="today-column-overlay" id="todayColumnOverlay"></div>
+            <div class="events-layer" id="eventsLayer"></div>
+            <div class="now-line" id="nowLine"></div>
+          </div>
+        </div>
+        <div class="hint">Левая колонка теперь закреплена целиком. Масштаб — двумя пальцами.</div>
+        <button class="fab" id="openCreate">Добавить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <h2 id="modalTitle">Добавить мероприятие</h2>
+      <p class="sub" id="modalSub">Дата, время, название и категория.</p>
+      <form id="eventForm">
+        <div class="form-grid">
+          <div class="field full">
+            <label for="eventTitle">Название</label>
+            <input id="eventTitle" type="text" placeholder="Например: Работа / Зал / Учёба" required />
+          </div>
+          <div class="field">
+            <label for="eventDate">Дата</label>
+            <input id="eventDate" type="date" required />
+          </div>
+          <div class="field">
+            <label for="eventCategory">Категория</label>
+            <select id="eventCategory">
+              <option value="work">Работа</option>
+              <option value="business">Бизнес</option>
+              <option value="study">Учёба</option>
+              <option value="sport">Спорт</option>
+              <option value="hobby">Хобби</option>
+              <option value="other">Другое</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="eventStart">Начало</label>
+            <input id="eventStart" type="time" required />
+          </div>
+          <div class="field">
+            <label for="eventEnd">Конец</label>
+            <input id="eventEnd" type="time" required />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="modal-btn" id="secondaryBtn">Стереть</button>
+          <button type="submit" class="modal-btn primary" id="primaryBtn">Добавить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'timeline_planner_mobile_v9_local';
+    const ZOOM_KEY = 'timeline_planner_mobile_v9_zoom';
+    const ROW_H = 64, HEAD_H = 82, TOTAL_ROWS = 24;
+    const DAYS_SHORT = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+    const state = { weekStart: getMonday(new Date()), events: loadEvents(), editingId: null, zoom: loadZoom() };
+
+    const plannerScroll = document.getElementById('plannerScroll');
+    const planner = document.getElementById('planner');
+    const gridHead = document.getElementById('gridHead');
+    const gridBody = document.getElementById('gridBody');
+    const eventsLayer = document.getElementById('eventsLayer');
+    const nowLine = document.getElementById('nowLine');
+    const todayColumnOverlay = document.getElementById('todayColumnOverlay');
+
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalSub = document.getElementById('modalSub');
+    const eventForm = document.getElementById('eventForm');
+    const eventTitle = document.getElementById('eventTitle');
+    const eventDate = document.getElementById('eventDate');
+    const eventCategory = document.getElementById('eventCategory');
+    const eventStart = document.getElementById('eventStart');
+    const eventEnd = document.getElementById('eventEnd');
+    const primaryBtn = document.getElementById('primaryBtn');
+    const secondaryBtn = document.getElementById('secondaryBtn');
+
+    document.getElementById('openCreate').addEventListener('click', () => openCreateModal());
+
+    secondaryBtn.addEventListener('click', () => {
+      if (state.editingId) {
+        if (confirm('Удалить это мероприятие?')) {
+          state.events = state.events.filter(e => e.id !== state.editingId);
+          persist(); closeModal(); render();
+        }
+      } else {
+        eventForm.reset();
+      }
+    });
+
+    eventForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const payload = getFormPayload();
+      if (!payload) return;
+      if (state.editingId) {
+        const idx = state.events.findIndex(x => x.id === state.editingId);
+        if (idx !== -1) state.events[idx] = { ...state.events[idx], ...payload };
+      } else {
+        state.events.push({ id: cryptoRandomId(), ...payload });
+      }
+      persist(); closeModal(); render();
+    });
+
+    modalBackdrop.addEventListener('click', (e) => {
+      if (e.target === modalBackdrop) closeModal();
+    });
+
+    function render(){
+      renderGrid();
+      renderEvents();
+      updateTodayColumn();
+      updateNowLine();
+      applyZoom(state.zoom, false, false);
+    }
+
+    function renderGrid(){
+      gridHead.innerHTML = '';
+      gridBody.innerHTML = '';
+
+      const corner = document.createElement('div');
+      corner.className = 'head-cell';
+      corner.textContent = 'Время';
+      gridHead.appendChild(corner);
+
+      const todayKey = dateKey(new Date());
+
+      for (let day = 0; day < 7; day++) {
+        const date = addDays(state.weekStart, day);
+        const head = document.createElement('div');
+        head.className = 'head-cell' + (dateKey(date) === todayKey ? ' today' : '');
+
+        const leftArrow = day === 0 ? `<button class="nav-week left" data-nav="-1">‹</button>` : '';
+        const rightArrow = day === 6 ? `<button class="nav-week right" data-nav="1">›</button>` : '';
+
+        head.innerHTML = `
+          ${leftArrow}
+          <div class="head-day">
+            <div class="dow">${DAYS_SHORT[day]}</div>
+            <div class="dom">${formatHeadDate(date)}</div>
+          </div>
+          ${rightArrow}
+        `;
+        gridHead.appendChild(head);
+      }
+
+      gridHead.querySelectorAll('.nav-week').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const dir = Number(e.currentTarget.dataset.nav);
+          state.weekStart = addDays(state.weekStart, dir * 7);
+          render();
+        });
+      });
+
+      for (let row = 0; row < TOTAL_ROWS; row++) {
+        const timeCell = document.createElement('div');
+        timeCell.className = 'time-cell';
+        timeCell.innerHTML = `
+          <div class="label">${rowToLabel(row)}</div>
+          <div class="ticks">
+            <div class="tick t0"></div>
+            <div class="tick t15"></div>
+            <div class="tick t30"></div>
+            <div class="tick t45"></div>
+            <div class="tick t60"></div>
+          </div>
+        `;
+        gridBody.appendChild(timeCell);
+
+        for (let day = 0; day < 7; day++) {
+          const date = addDays(state.weekStart, day);
+          const altClass = day % 2 === 0 ? 'col-a' : 'col-b';
+          const slot = document.createElement('div');
+          slot.className = `slot ${altClass}` + (dateKey(date) === todayKey ? ' today' : '');
+          slot.innerHTML = `<div class="quarter q15"></div><div class="quarter q30"></div><div class="quarter q45"></div>`;
+          slot.addEventListener('click', (ev) => {
+            const rect = slot.getBoundingClientRect();
+            const y = ev.clientY - rect.top;
+            const quarter = Math.floor((y / rect.height) * 4);
+            const mins = quarter * 15;
+            const start = `${String(row).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+            const endMins = Math.min(row * 60 + mins + 60, 24 * 60);
+            openCreateModal({ date: dateKey(date), start, end: minutesToTime(endMins) });
+          });
+          gridBody.appendChild(slot);
+        }
+      }
+    }
+
+    function renderEvents(){
+      eventsLayer.innerHTML = '';
+      const weekDates = Array.from({ length: 7 }, (_, i) => dateKey(addDays(state.weekStart, i)));
+
+      for (const dayKey of weekDates) {
+        const dayEvents = state.events
+          .filter(e => e.date === dayKey)
+          .sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+
+        const clusters = buildOverlapClusters(dayEvents);
+        const dayIndex = weekDates.indexOf(dayKey);
+
+        for (const cluster of clusters) {
+          cluster.forEach((event, overlapIndex) => {
+            const leftPct = (100 / 7) * dayIndex;
+            const dayWidthPct = (100 / 7);
+            const colWidthPct = dayWidthPct / cluster.length;
+            const pad = 5;
+            const top = (timeToMinutes(event.start) / 60) * ROW_H;
+            const height = ((timeToMinutes(event.end) - timeToMinutes(event.start)) / 60) * ROW_H - 4;
+
+            const card = document.createElement('div');
+            card.className = 'event';
+            card.dataset.cat = event.category || 'other';
+            card.style.top = `${top + 2}px`;
+            card.style.height = `${Math.max(height, 28)}px`;
+            card.style.left = `calc(${leftPct}% + ${colWidthPct * overlapIndex}% + ${pad}px)`;
+            card.style.width = `calc(${colWidthPct}% - ${pad * 2}px)`;
+            card.innerHTML = `
+              <div class="dot"></div>
+              <div class="t">${escapeHtml(event.title)}</div>
+              <div class="s">${event.start} — ${event.end}</div>
+            `;
+            card.addEventListener('click', (ev) => {
+              ev.stopPropagation();
+              openEditModal(event);
+            });
+            eventsLayer.appendChild(card);
+          });
+        }
+      }
+    }
+
+    function buildOverlapClusters(events){
+      const clusters = [];
+      let active = [];
+      for (const event of events) {
+        active = active.filter(e => timeToMinutes(e.end) > timeToMinutes(event.start));
+        if (active.length === 0) {
+          clusters.push([event]);
+          active = [event];
+        } else {
+          clusters[clusters.length - 1].push(event);
+          active.push(event);
+        }
+      }
+      return clusters;
+    }
+
+    function updateTodayColumn(){
+      const now = new Date();
+      const weekStart = new Date(state.weekStart);
+      const weekEnd = addDays(weekStart, 7);
+      if (now < weekStart || now >= weekEnd) {
+        todayColumnOverlay.style.display = 'none';
+        return;
+      }
+      const index = ((now.getDay() + 6) % 7);
+      todayColumnOverlay.style.display = 'block';
+      todayColumnOverlay.style.left = `calc(var(--timeW) + ((100% - var(--timeW)) / 7) * ${index})`;
+    }
+
+    function updateNowLine(){
+      const now = new Date();
+      const weekStart = new Date(state.weekStart);
+      const weekEnd = addDays(weekStart, 7);
+      if (now < weekStart || now >= weekEnd) {
+        nowLine.style.display = 'none';
+        return;
+      }
+      const minutes = now.getHours() * 60 + now.getMinutes();
+      const top = HEAD_H + (minutes / 60) * ROW_H;
+      nowLine.style.display = 'block';
+      nowLine.style.top = `${top}px`;
+    }
+
+    function openCreateModal(prefill = {}){
+      state.editingId = null;
+      modalTitle.textContent = 'Добавить мероприятие';
+      modalSub.textContent = 'Дата, время, название и категория.';
+      primaryBtn.textContent = 'Добавить';
+      secondaryBtn.textContent = 'Стереть';
+      eventForm.reset();
+      eventDate.value = prefill.date || dateKey(new Date());
+      eventCategory.value = prefill.category || 'work';
+      eventStart.value = prefill.start || '09:00';
+      eventEnd.value = prefill.end || '10:00';
+      eventTitle.value = prefill.title || '';
+      modalBackdrop.classList.add('show');
+      setTimeout(() => eventTitle.focus(), 20);
+    }
+
+    function openEditModal(event){
+      state.editingId = event.id;
+      modalTitle.textContent = 'Мероприятие';
+      modalSub.textContent = 'Можно отредактировать или удалить.';
+      primaryBtn.textContent = 'Редактировать';
+      secondaryBtn.textContent = 'Удалить';
+      eventTitle.value = event.title;
+      eventDate.value = event.date;
+      eventCategory.value = event.category || 'other';
+      eventStart.value = event.start;
+      eventEnd.value = event.end;
+      modalBackdrop.classList.add('show');
+      setTimeout(() => eventTitle.focus(), 20);
+    }
+
+    function closeModal(){
+      modalBackdrop.classList.remove('show');
+      state.editingId = null;
+    }
+
+    function getFormPayload(){
+      const title = eventTitle.value.trim();
+      const date = eventDate.value;
+      const category = eventCategory.value;
+      const start = eventStart.value;
+      const end = eventEnd.value;
+      if (!title || !date || !start || !end) return null;
+      if (timeToMinutes(end) <= timeToMinutes(start)) {
+        alert('Время окончания должно быть позже времени начала.');
+        return null;
+      }
+      return { title, date, category, start, end };
+    }
+
+    function applyZoom(newZoom, save = true, keepCenter = true){
+      const prev = state.zoom || 1;
+      state.zoom = Math.max(0.9, Math.min(1.8, newZoom));
+      const rect = plannerScroll.getBoundingClientRect();
+
+      let centerX = plannerScroll.scrollLeft + rect.width / 2;
+      let centerY = plannerScroll.scrollTop + rect.height / 2;
+
+      planner.style.transform = `scale(${state.zoom})`;
+      planner.style.width = `${100 / state.zoom}%`;
+      planner.style.height = `${(HEAD_H + TOTAL_ROWS * ROW_H) * state.zoom}px`;
+
+      if (keepCenter) {
+        const ratio = state.zoom / prev;
+        plannerScroll.scrollLeft = Math.max(0, centerX * ratio - rect.width / 2);
+        plannerScroll.scrollTop = Math.max(0, centerY * ratio - rect.height / 2);
+      }
+
+      if (save) localStorage.setItem(ZOOM_KEY, String(state.zoom));
+    }
+
+    function loadEvents(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; } }
+    function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.events)); }
+    function loadZoom(){ const v = Number(localStorage.getItem(ZOOM_KEY) || '1'); return Number.isFinite(v) ? v : 1; }
+
+    function getMonday(d){ const x = new Date(d); x.setHours(0,0,0,0); const day = (x.getDay() + 6) % 7; x.setDate(x.getDate() - day); return x; }
+    function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+    function dateKey(d){ const x = new Date(d); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; }
+    function formatHeadDate(d){ return new Intl.DateTimeFormat('ru-RU', { day:'numeric', month:'short' }).format(d); }
+    function rowToLabel(row){ return `${String(row).padStart(2,'0')}:00`; }
+    function timeToMinutes(t){ const [h,m] = t.split(':').map(Number); return h * 60 + m; }
+    function minutesToTime(total){ const h = Math.floor(total / 60); const m = total % 60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; }
+    function cryptoRandomId(){ if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); return String(Date.now()) + Math.random().toString(16).slice(2); }
+    function escapeHtml(str){ return str.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;"); }
+
+    // pinch zoom that does not break scroll
+    let pinchStartDist = null;
+    let pinchStartZoom = 1;
+    let pinchCenter = null;
+
+    plannerScroll.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        pinchStartDist = getTouchDistance(e.touches[0], e.touches[1]);
+        pinchStartZoom = state.zoom;
+        pinchCenter = {
+          x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+          y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+        };
+      }
+    }, { passive: true });
+
+    plannerScroll.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2 && pinchStartDist) {
+        const dist = getTouchDistance(e.touches[0], e.touches[1]);
+        const scale = dist / pinchStartDist;
+        applyZoom(pinchStartZoom * scale);
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    plannerScroll.addEventListener('touchend', (e) => {
+      if (e.touches.length < 2) {
+        pinchStartDist = null;
+        pinchCenter = null;
+      }
+    }, { passive: true });
+
+    function getTouchDistance(t1, t2){
+      return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+    }
+
+    render();
+    setInterval(updateNowLine, 30000);
+  </script>
+</body>
+</html>
