@@ -1,749 +1,140 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Timeline Planner Mobile</title>
-  <style>
-    :root{
-      --bg0:#070707;
-      --bg1:#101010;
-      --bg2:#171717;
-      --text:#f2f2f2;
-      --muted:#b5b5b5;
-      --silver:#d8d8d8;
-      --todayA:rgba(255,255,255,.08);
-      --todayB:rgba(255,255,255,.03);
-      --dayA:rgba(255,255,255,.010);
-      --dayB:rgba(255,255,255,.025);
-      --red:#ff3b30;
-      --timeW:84px;
-      --headH:74px;
-      --hourH:60px;
-      --rows:24;
-      --line:rgba(255,255,255,.09);
-      --lineSoft:rgba(255,255,255,.05);
-      --dayMin:130px;
-    }
-
-    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{height:100%}
-    body{
-      margin:0;
-      color:var(--text);
-      font-family:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background:
-        radial-gradient(900px 500px at 15% -10%, rgba(255,255,255,.06), transparent 45%),
-        radial-gradient(900px 500px at 100% 0%, rgba(255,255,255,.04), transparent 45%),
-        linear-gradient(180deg,var(--bg2),var(--bg1) 55%,var(--bg0));
-      overflow:hidden;
-    }
-
-    .app{height:100%;padding:10px}
-    .shell{
-      height:100%;
-      position:relative;
-      overflow:hidden;
-      border-radius:22px;
-      border:1px solid rgba(255,255,255,.10);
-      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-      backdrop-filter: blur(18px) saturate(118%);
-      -webkit-backdrop-filter: blur(18px) saturate(118%);
-      box-shadow:0 20px 56px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08);
-    }
-
-    .planner-wrap{position:relative;height:100%;overflow:hidden}
-    .planner-scroll{
-      height:100%;
-      overflow:auto;
-      position:relative;
-      overscroll-behavior:contain;
-      background:linear-gradient(180deg, rgba(255,255,255,.015), rgba(255,255,255,.005));
-      touch-action:auto;
-      -webkit-overflow-scrolling:touch;
-    }
-    .planner{
-      width:max(calc(var(--timeW) + 7 * var(--dayMin)), 100%);
-      min-height:calc(var(--headH) + var(--rows) * var(--hourH));
-      position:relative;
-      transform-origin: top left;
-      will-change: transform;
-    }
-
-    .grid-head{
-      position:sticky;
-      top:0;
-      z-index:40;
-      display:grid;
-      grid-template-columns: var(--timeW) repeat(7, minmax(var(--dayMin), 1fr));
-      background:linear-gradient(180deg, rgba(12,12,12,.98), rgba(18,18,18,.92));
-      border-bottom:1px solid var(--line);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-    }
-    .head-cell{
-      min-height:var(--headH);
-      border-right:1px solid var(--lineSoft);
-      position:relative;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      text-align:center;
-      overflow:hidden;
-    }
-    .head-cell:first-child{
-      position:sticky;
-      left:0;
-      z-index:46;
-      justify-content:center;
-      color:var(--muted);
-      font-size:12px;
-      letter-spacing:.5px;
-      background:linear-gradient(180deg, rgba(12,12,12,.995), rgba(18,18,18,.97));
-      border-right:1px solid var(--line);
-      box-shadow:2px 0 0 rgba(255,255,255,.03);
-    }
-    .head-cell:not(:first-child){
-      background:linear-gradient(180deg, rgba(255,255,255,.028), rgba(255,255,255,.012));
-    }
-    .head-cell.today::before{
-      content:"";
-      position:absolute;
-      inset:6px 6px;
-      border-radius:16px;
-      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.035));
-      border:1px solid rgba(255,255,255,.16);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-    }
-    .head-day{position:relative;z-index:2;display:flex;flex-direction:column;gap:4px;padding:0 6px}
-    .head-day .dow{font-size:12px;color:var(--muted)}
-    .head-day .dom{font-size:16px;font-weight:800;color:var(--silver);line-height:1.1}
-
-    .nav-week{
-      position:absolute;
-      top:50%;
-      transform:translateY(-50%);
-      width:34px;height:34px;
-      border:none;border-radius:12px;
-      cursor:pointer;
-      color:var(--text);
-      font-size:18px;font-weight:800;
-      background:linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.07));
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 8px 16px rgba(0,0,0,.18);
-      z-index:3;
-    }
-    .nav-week.left{left:6px}
-    .nav-week.right{right:6px}
-
-    .grid-body{
-      display:grid;
-      grid-template-columns: var(--timeW) repeat(7, minmax(var(--dayMin), 1fr));
-      grid-auto-rows:var(--hourH);
-      position:relative;
-    }
-
-    .time-col-bg{
-      position:absolute;
-      top:var(--headH);
-      left:0;
-      width:var(--timeW);
-      height:calc(var(--rows) * var(--hourH));
-      z-index:18;
-      pointer-events:none;
-      background:linear-gradient(180deg, rgba(12,12,12,.995), rgba(18,18,18,.97));
-      border-right:1px solid var(--line);
-      box-shadow:2px 0 0 rgba(255,255,255,.03);
-    }
-
-    .time-cell{
-      position:sticky;
-      left:0;
-      z-index:24;
-      border-right:1px solid var(--line);
-      border-bottom:1px solid var(--lineSoft);
-      background:transparent;
-      color:var(--silver);
-      font-size:14px;
-      font-weight:700;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      text-align:center;
-      user-select:none;
-      position:relative;
-    }
-    .time-cell .label{position:relative;z-index:2}
-    .time-cell .ticks{
-      position:absolute;
-      right:6px; top:0; bottom:0;
-      width:16px;
-      pointer-events:none;
-    }
-    .tick{position:absolute; right:0; height:1px; background:rgba(255,255,255,.22); transform:translateY(-.5px)}
-    .tick.t0{top:0;width:14px;background:rgba(255,255,255,.32)}
-    .tick.t15{top:25%;width:8px}
-    .tick.t30{top:50%;width:11px;background:rgba(255,255,255,.26)}
-    .tick.t45{top:75%;width:8px}
-    .tick.t60{bottom:0;width:14px;background:rgba(255,255,255,.32)}
-
-    .slot{
-      position:relative;
-      border-right:1px solid var(--lineSoft);
-      border-bottom:1px solid var(--lineSoft);
-      cursor:pointer;
-      overflow:hidden;
-    }
-    .slot.col-a{background:linear-gradient(180deg, var(--dayA), rgba(255,255,255,.005))}
-    .slot.col-b{background:linear-gradient(180deg, var(--dayB), rgba(255,255,255,.010))}
-    .slot.today{
-      background:
-        linear-gradient(180deg, var(--todayA), var(--todayB)),
-        linear-gradient(180deg, rgba(255,255,255,.016), rgba(255,255,255,.008));
-    }
-    .slot:hover{box-shadow: inset 0 0 0 1px rgba(255,255,255,.10)}
-    .quarter{position:absolute; left:0; right:0; height:1px; background:rgba(255,255,255,.03); pointer-events:none}
-    .q15{top:25%}
-    .q30{top:50%;background:rgba(255,255,255,.045)}
-    .q45{top:75%}
-
-    .events-layer{
-      position:absolute;
-      top:var(--headH);
-      left:var(--timeW);
-      right:0;
-      height:calc(var(--rows) * var(--hourH));
-      z-index:30;
-      pointer-events:none;
-    }
-    .event{
-      position:absolute;
-      padding:10px 12px;
-      border-radius:16px;
-      overflow:hidden;
-      color:#fff;
-      border:1px solid rgba(255,255,255,.14);
-      box-shadow:0 14px 28px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.12);
-      backdrop-filter: blur(18px) saturate(140%);
-      -webkit-backdrop-filter: blur(18px) saturate(140%);
-      pointer-events:auto;
-      cursor:pointer;
-      display:flex;
-      flex-direction:column;
-      gap:4px;
-    }
-    .event:hover{filter:brightness(1.04)}
-    .event .t{font-size:12px;font-weight:800;line-height:1.2;padding-right:16px}
-    .event .s{font-size:10px;color:rgba(255,255,255,.86)}
-    .event .dot{position:absolute;top:9px;right:9px;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.88)}
-    .event[data-cat="work"]{background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)), linear-gradient(135deg, rgba(201,201,201,.28), rgba(115,115,115,.16))}
-    .event[data-cat="business"]{background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)), linear-gradient(135deg, rgba(177,177,177,.32), rgba(99,99,99,.16))}
-    .event[data-cat="study"]{background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)), linear-gradient(135deg, rgba(166,166,166,.30), rgba(82,82,82,.15))}
-    .event[data-cat="sport"]{background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)), linear-gradient(135deg, rgba(214,214,214,.28), rgba(90,90,90,.14))}
-    .event[data-cat="hobby"]{background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)), linear-gradient(135deg, rgba(192,192,192,.28), rgba(110,110,110,.16))}
-    .event[data-cat="other"]{background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)), linear-gradient(135deg, rgba(230,230,230,.22), rgba(120,120,120,.12))}
-
-    .today-column-overlay{
-      position:absolute;
-      top:var(--headH);
-      height:calc(var(--rows) * var(--hourH));
-      width:calc((100% - var(--timeW)) / 7);
-      z-index:10;
-      pointer-events:none;
-      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-      box-shadow: inset 1px 0 0 rgba(255,255,255,.06), inset -1px 0 0 rgba(255,255,255,.06);
-    }
-
-    .now-line{
-      position:absolute;
-      left:0; right:0;
-      height:2px;
-      background:var(--red);
-      z-index:32;
-      pointer-events:none;
-      display:none;
-    }
-
-    .fab{
-      position:absolute;
-      right:12px; bottom:12px;
-      z-index:50;
-      border:none; cursor:pointer; color:var(--text);
-      border-radius:16px; padding:13px 16px;
-      font-size:13px; font-weight:800;
-      background:linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.07));
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 18px 34px rgba(0,0,0,.20);
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    }
-    .hint{
-      position:absolute; left:12px; bottom:12px;
-      z-index:50; padding:9px 11px; border-radius:12px;
-      color:var(--muted); font-size:11px;
-      border:1px solid rgba(255,255,255,.09);
-      background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-      max-width:55%;
-    }
-
-    .modal-backdrop{
-      position:fixed;inset:0; display:none;align-items:center;justify-content:center;
-      padding:14px;
-      background:rgba(4,7,12,.54);
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-      z-index:60;
-    }
-    .modal-backdrop.show{display:flex}
-    .modal{
-      width:min(520px,100%);
-      border-radius:24px;
-      padding:18px;
-      background:linear-gradient(180deg, rgba(20,20,20,.97), rgba(12,12,12,.95));
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow:0 26px 70px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.08);
-      backdrop-filter: blur(24px) saturate(120%); -webkit-backdrop-filter: blur(24px) saturate(120%);
-    }
-    .modal h2{margin:0 0 8px;font-size:22px}
-    .modal .sub{margin:0 0 14px;color:var(--muted);font-size:12px}
-    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .field{display:flex;flex-direction:column;gap:7px}
-    .field.full{grid-column:1/-1}
-    .field label{font-size:12px;color:var(--muted);padding-left:2px}
-    .field input,.field select{
-      height:46px;border-radius:14px;border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06);color:var(--text);
-      padding:0 12px;font-size:14px;outline:none;
-    }
-    .modal-actions{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .modal-btn{
-      height:46px;border:none;border-radius:14px;cursor:pointer;
-      font-size:14px;font-weight:800;color:var(--text);
-      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.07));
-      border:1px solid rgba(255,255,255,.10);
-    }
-    .modal-btn.primary{background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.09))}
-
-    @media (max-width:720px){
-      .app{padding:8px}
-      .shell{border-radius:18px}
-      :root{--timeW:76px; --headH:68px; --hourH:56px; --dayMin:116px;}
-      .head-day .dom{font-size:14px}
-      .head-day .dow{font-size:11px}
-      .fab{right:10px;bottom:10px}
-      .hint{display:none}
-      .modal{padding:16px}
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premium Weekly Timeline</title>
+<style>
+:root{--bg0:#05070c;--bg1:#0b1120;--bg2:#12192a;--panel:rgba(255,255,255,.06);--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.05);--text:#edf2f8;--muted:#97a3b4;--red:#d24d4d;--gold1:#f0dbb0;--gold2:#c89d57;--gold3:#8b6732;--moon:rgba(205,217,255,.14);--shadow:0 18px 70px rgba(0,0,0,.42);--time-col:86px;--header-h:64px;--hour-h:84px;--day-w:156px;--radius:24px}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:Inter,Arial,sans-serif;color:var(--text);background:radial-gradient(circle at 82% 10%, var(--moon), transparent 10%),radial-gradient(circle at top left, rgba(200,157,87,.08), transparent 16%),radial-gradient(circle at bottom right, rgba(210,77,77,.05), transparent 20%),linear-gradient(180deg,var(--bg0),var(--bg1) 55%,var(--bg2));overflow:hidden}
+.app{height:100vh;padding:8px}.surface{position:relative;height:100%;border-radius:var(--radius);border:1px solid var(--line);background:radial-gradient(circle at 85% 14%, rgba(205,217,255,.10), transparent 12%),linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025)),linear-gradient(180deg, rgba(7,10,15,.94), rgba(7,10,15,.88));backdrop-filter:blur(18px);box-shadow:var(--shadow);overflow:hidden}
+.calendar-scroll{position:absolute;inset:0;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent}
+.calendar{position:relative;min-width:calc(var(--time-col) + 7*var(--day-w));display:grid;grid-template-columns:var(--time-col) repeat(7,minmax(var(--day-w),1fr));grid-template-rows:var(--header-h) repeat(24,var(--hour-h))}
+.corner,.day-header,.time-cell{backdrop-filter:blur(18px)}
+.corner{grid-column:1;grid-row:1;position:sticky;top:0;left:0;z-index:50;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)),rgba(8,12,18,.97)}
+.day-header{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line);border-right:1px solid var(--line2);background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)),rgba(8,12,18,.94)}
+.day-header.today{background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04)),linear-gradient(180deg, rgba(210,77,77,.10), rgba(255,255,255,.02)),rgba(8,12,18,.95)}
+.day-header-inner{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:0 10px}.day-title{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0}.day-name{font-size:13px;font-weight:800;white-space:nowrap}.day-date{font-size:11px;color:var(--muted);margin-top:3px}
+.week-nav{width:34px;height:34px;border:none;border-radius:12px;cursor:pointer;display:grid;place-items:center;color:var(--text);background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));border:1px solid var(--line);flex:0 0 auto}
+.time-cell{position:sticky;left:0;z-index:30;border-right:1px solid var(--line);border-bottom:1px solid var(--line2);background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),rgba(8,12,18,.96);overflow:hidden}
+.time-inner{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding-right:16px;font-size:12px;color:var(--muted);font-weight:700}
+.time-ruler{position:absolute;top:0;right:8px;width:14px;height:100%}.time-ruler .base,.time-ruler .main,.time-ruler .q1,.time-ruler .q2,.time-ruler .q3{position:absolute;right:0;height:1px;background:rgba(255,255,255,.22)}.time-ruler .base{top:0;bottom:0;width:1px;height:auto;background:rgba(255,255,255,.08)}.time-ruler .main{top:0;width:14px;background:rgba(255,255,255,.34)}.time-ruler .q1{top:25%;width:6px}.time-ruler .q2{top:50%;width:10px;background:rgba(255,255,255,.28)}.time-ruler .q3{top:75%;width:6px}.time-cell.last .time-ruler .main{top:auto;bottom:0}
+.cell{position:relative;border-right:1px solid var(--line2);border-bottom:1px solid var(--line2);cursor:pointer;background:linear-gradient(180deg, transparent 24.5%, rgba(255,255,255,.045) 25%, transparent 25.5%),linear-gradient(180deg, transparent 49.5%, rgba(255,255,255,.055) 50%, transparent 50.5%),linear-gradient(180deg, transparent 74.5%, rgba(255,255,255,.045) 75%, transparent 75.5%),rgba(255,255,255,.012)}
+.cell.alt{background:linear-gradient(180deg, transparent 24.5%, rgba(255,255,255,.045) 25%, transparent 25.5%),linear-gradient(180deg, transparent 49.5%, rgba(255,255,255,.055) 50%, transparent 50.5%),linear-gradient(180deg, transparent 74.5%, rgba(255,255,255,.045) 75%, transparent 75.5%),rgba(255,255,255,.018)}
+.cell.today{background:linear-gradient(180deg, transparent 24.5%, rgba(255,255,255,.05) 25%, transparent 25.5%),linear-gradient(180deg, transparent 49.5%, rgba(255,255,255,.06) 50%, transparent 50.5%),linear-gradient(180deg, transparent 74.5%, rgba(255,255,255,.05) 75%, transparent 75.5%),linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),rgba(255,255,255,.03)}
+.cell.today.alt{background:linear-gradient(180deg, transparent 24.5%, rgba(255,255,255,.05) 25%, transparent 25.5%),linear-gradient(180deg, transparent 49.5%, rgba(255,255,255,.06) 50%, transparent 50.5%),linear-gradient(180deg, transparent 74.5%, rgba(255,255,255,.05) 75%, transparent 75.5%),linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025)),rgba(255,255,255,.04)}
+.events-layer{position:absolute;inset:0;pointer-events:none;z-index:25}.event-card{position:absolute;border-radius:18px;padding:10px 12px;pointer-events:auto;cursor:pointer;overflow:hidden;border:1px solid rgba(255,255,255,.12);box-shadow:0 10px 24px rgba(0,0,0,.20);backdrop-filter:blur(8px)}.event-card:before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:rgba(255,255,255,.65)}.event-title{font-size:13px;font-weight:800;line-height:1.2;margin-left:6px}.event-meta{font-size:11px;color:rgba(255,255,255,.86);margin-top:6px;margin-left:6px}
+.cat-work{background:linear-gradient(180deg, rgba(116,142,186,.34), rgba(116,142,186,.20))}.cat-business{background:linear-gradient(180deg, rgba(152,130,182,.32), rgba(152,130,182,.18))}.cat-study{background:linear-gradient(180deg, rgba(109,153,145,.32), rgba(109,153,145,.18))}.cat-sport{background:linear-gradient(180deg, rgba(120,156,114,.30), rgba(120,156,114,.18))}.cat-hobby{background:linear-gradient(180deg, rgba(176,141,114,.32), rgba(176,141,114,.18))}.cat-other{background:linear-gradient(180deg, rgba(125,132,145,.30), rgba(125,132,145,.16))}
+.now-line{position:absolute;left:0;right:0;height:2px;background:var(--red);z-index:32;pointer-events:none}.now-line:before{content:'';position:absolute;left:0;top:50%;width:10px;height:10px;border-radius:50%;background:var(--red);transform:translate(-50%,-50%)}
+.fab{position:absolute;right:14px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:70;min-height:52px;padding:0 18px;border:none;border-radius:18px;cursor:pointer;color:#13100a;font-size:14px;font-weight:800;background:linear-gradient(180deg,var(--gold1),var(--gold2) 58%,var(--gold3));box-shadow:0 16px 36px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.38)}
+.modal-backdrop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(4,7,12,.66);backdrop-filter:blur(10px);z-index:100}.modal-backdrop.show{display:flex}
+.modal{width:min(100%,520px);border-radius:26px;border:1px solid var(--line);background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)),linear-gradient(180deg, rgba(12,17,24,.98), rgba(9,13,18,.98));box-shadow:var(--shadow);padding:22px}.modal-title{margin:0 0 18px;font-size:28px;letter-spacing:-.04em}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:flex;flex-direction:column;gap:8px}.field.full{grid-column:1/-1}.field label{font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}.field input,.field select{width:100%;height:48px;border-radius:15px;border:1px solid var(--line);background:rgba(255,255,255,.045);color:var(--text);padding:0 14px;font-size:14px;outline:none}
+.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}.modal-btn{height:48px;border:none;border-radius:16px;cursor:pointer;font-size:15px;font-weight:800;color:var(--text);background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));border:1px solid var(--line)}.modal-btn.secondary{color:rgba(255,222,222,.95);background:linear-gradient(180deg, rgba(210,77,77,.22), rgba(210,77,77,.10));border-color:rgba(210,77,77,.22)}.modal-btn.primary{color:#13100a;background:linear-gradient(180deg,var(--gold1),var(--gold2) 58%,var(--gold3))}
+.sync-note{margin-top:10px;color:#7d8797;font-size:12px;line-height:1.45}
+@media (max-width:840px){:root{--time-col:82px;--header-h:62px;--hour-h:78px;--day-w:140px}.day-name{font-size:12px}.day-date{font-size:10px}.modal-title{font-size:24px}}
+@media (max-width:560px){.surface{border-radius:20px}.fab{right:12px;bottom:calc(94px + env(safe-area-inset-bottom));min-height:48px;padding:0 16px;font-size:13px}.modal{padding:18px;border-radius:22px}.form{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
-  <div class="app">
-    <div class="shell">
-      <div class="planner-wrap">
-        <div class="planner-scroll" id="plannerScroll">
-          <div class="planner" id="planner">
-            <div class="grid-head" id="gridHead"></div>
-            <div class="grid-body" id="gridBody"></div>
-            <div class="time-col-bg"></div>
-            <div class="today-column-overlay" id="todayColumnOverlay"></div>
-            <div class="events-layer" id="eventsLayer"></div>
-            <div class="now-line" id="nowLine"></div>
-          </div>
-        </div>
-        <div class="hint">Левая колонка теперь закреплена целиком. Масштаб — двумя пальцами.</div>
-        <button class="fab" id="openCreate">Добавить</button>
-      </div>
+<div class="app"><div class="surface">
+  <div class="calendar-scroll" id="calendarScroll">
+    <div class="calendar" id="calendar"></div>
+    <div class="events-layer" id="eventsLayer"></div>
+    <div class="now-line" id="nowLine"></div>
+  </div>
+  <button class="fab" id="openAddBtn">Добавить мероприятие</button>
+</div></div>
+
+<div class="modal-backdrop" id="modalBackdrop"><div class="modal">
+  <h2 class="modal-title" id="modalTitle">Добавить мероприятие</h2>
+  <div class="form">
+    <div class="field full"><label for="eventTitle">Название мероприятия</label><input id="eventTitle" type="text" placeholder="Например: Встреча с клиентом"></div>
+    <div class="field full"><label for="eventDate">Дата</label><input id="eventDate" type="date"></div>
+    <div class="field"><label for="eventStart">Время начала</label><input id="eventStart" type="time" step="900"></div>
+    <div class="field"><label for="eventEnd">Время конца</label><input id="eventEnd" type="time" step="900"></div>
+    <div class="field full"><label for="eventCategory">Категория</label>
+      <select id="eventCategory"><option value="work">работа</option><option value="business">бизнес</option><option value="study">учёба</option><option value="sport">спорт</option><option value="hobby">хобби</option><option value="other">другое</option></select>
     </div>
   </div>
+  <div class="modal-actions"><button class="modal-btn secondary" id="secondaryBtn">Стереть</button><button class="modal-btn primary" id="primaryBtn">Добавить</button></div>
+  <div class="sync-note">События сохраняются через localStorage. Позже сюда можно подключить Firebase или Supabase.</div>
+</div></div>
 
-  <div class="modal-backdrop" id="modalBackdrop">
-    <div class="modal">
-      <h2 id="modalTitle">Добавить мероприятие</h2>
-      <p class="sub" id="modalSub">Дата, время, название и категория.</p>
-      <form id="eventForm">
-        <div class="form-grid">
-          <div class="field full">
-            <label for="eventTitle">Название</label>
-            <input id="eventTitle" type="text" placeholder="Например: Работа / Зал / Учёба" required />
-          </div>
-          <div class="field">
-            <label for="eventDate">Дата</label>
-            <input id="eventDate" type="date" required />
-          </div>
-          <div class="field">
-            <label for="eventCategory">Категория</label>
-            <select id="eventCategory">
-              <option value="work">Работа</option>
-              <option value="business">Бизнес</option>
-              <option value="study">Учёба</option>
-              <option value="sport">Спорт</option>
-              <option value="hobby">Хобби</option>
-              <option value="other">Другое</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="eventStart">Начало</label>
-            <input id="eventStart" type="time" required />
-          </div>
-          <div class="field">
-            <label for="eventEnd">Конец</label>
-            <input id="eventEnd" type="time" required />
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="modal-btn" id="secondaryBtn">Стереть</button>
-          <button type="submit" class="modal-btn primary" id="primaryBtn">Добавить</button>
-        </div>
-      </form>
-    </div>
-  </div>
+<script>
+(() => {
+const DAYS=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+const CATEGORIES={work:{label:'работа',className:'cat-work'},business:{label:'бизнес',className:'cat-business'},study:{label:'учёба',className:'cat-study'},sport:{label:'спорт',className:'cat-sport'},hobby:{label:'хобби',className:'cat-hobby'},other:{label:'другое',className:'cat-other'}};
+const STORAGE_KEY='premium-weekly-timeline-v3';
+const D={calendar:document.getElementById('calendar'),eventsLayer:document.getElementById('eventsLayer'),nowLine:document.getElementById('nowLine'),scroll:document.getElementById('calendarScroll'),openAddBtn:document.getElementById('openAddBtn'),modalBackdrop:document.getElementById('modalBackdrop'),modalTitle:document.getElementById('modalTitle'),title:document.getElementById('eventTitle'),date:document.getElementById('eventDate'),start:document.getElementById('eventStart'),end:document.getElementById('eventEnd'),category:document.getElementById('eventCategory'),primaryBtn:document.getElementById('primaryBtn'),secondaryBtn:document.getElementById('secondaryBtn')};
+let weekOffset=0, editingId=null, events=loadLocalEvents();
+function loadLocalEvents(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch{return[]}}
+function saveLocalEvents(){localStorage.setItem(STORAGE_KEY,JSON.stringify(events))}
+async function saveRemoteEvents(){return true}
+function startOfWeek(date){const d=new Date(date),day=(d.getDay()+6)%7; d.setHours(0,0,0,0); d.setDate(d.getDate()-day); return d}
+function displayWeekStartFor(offset){const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+offset*7); return d}
+function formatISO(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function formatShort(d){return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}`}
+function timeToMinutes(v){const [h,m]=v.split(':').map(Number); return h*60+m}
+function minutesToTime(v){const h=Math.floor(v/60),m=v%60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`}
+function clampEventEnd(s,e){if(e<=s)return Math.min(s+60,24*60); return Math.min(e,24*60)}
+function eventSort(a,b){if(a.date!==b.date)return a.date.localeCompare(b.date); return timeToMinutes(a.start)-timeToMinutes(b.start)}
+function escapeHtml(text){return text.replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 
-  <script>
-    const STORAGE_KEY = 'timeline_planner_mobile_v9_local';
-    const ZOOM_KEY = 'timeline_planner_mobile_v9_zoom';
-    const ROW_H = 64, HEAD_H = 82, TOTAL_ROWS = 24;
-    const DAYS_SHORT = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
-    const state = { weekStart: getMonday(new Date()), events: loadEvents(), editingId: null, zoom: loadZoom() };
-
-    const plannerScroll = document.getElementById('plannerScroll');
-    const planner = document.getElementById('planner');
-    const gridHead = document.getElementById('gridHead');
-    const gridBody = document.getElementById('gridBody');
-    const eventsLayer = document.getElementById('eventsLayer');
-    const nowLine = document.getElementById('nowLine');
-    const todayColumnOverlay = document.getElementById('todayColumnOverlay');
-
-    const modalBackdrop = document.getElementById('modalBackdrop');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalSub = document.getElementById('modalSub');
-    const eventForm = document.getElementById('eventForm');
-    const eventTitle = document.getElementById('eventTitle');
-    const eventDate = document.getElementById('eventDate');
-    const eventCategory = document.getElementById('eventCategory');
-    const eventStart = document.getElementById('eventStart');
-    const eventEnd = document.getElementById('eventEnd');
-    const primaryBtn = document.getElementById('primaryBtn');
-    const secondaryBtn = document.getElementById('secondaryBtn');
-
-    document.getElementById('openCreate').addEventListener('click', () => openCreateModal());
-
-    secondaryBtn.addEventListener('click', () => {
-      if (state.editingId) {
-        if (confirm('Удалить это мероприятие?')) {
-          state.events = state.events.filter(e => e.id !== state.editingId);
-          persist(); closeModal(); render();
-        }
-      } else {
-        eventForm.reset();
-      }
-    });
-
-    eventForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const payload = getFormPayload();
-      if (!payload) return;
-      if (state.editingId) {
-        const idx = state.events.findIndex(x => x.id === state.editingId);
-        if (idx !== -1) state.events[idx] = { ...state.events[idx], ...payload };
-      } else {
-        state.events.push({ id: cryptoRandomId(), ...payload });
-      }
-      persist(); closeModal(); render();
-    });
-
-    modalBackdrop.addEventListener('click', (e) => {
-      if (e.target === modalBackdrop) closeModal();
-    });
-
-    function render(){
-      renderGrid();
-      renderEvents();
-      updateTodayColumn();
-      updateNowLine();
-      applyZoom(state.zoom, false, false);
+function buildCalendar(){
+  const displayStart=displayWeekStartFor(weekOffset), todayISO=formatISO(new Date());
+  D.calendar.innerHTML='';
+  const corner=document.createElement('div'); corner.className='corner'; D.calendar.appendChild(corner);
+  for(let dayIndex=0; dayIndex<7; dayIndex++){
+    const date=new Date(displayStart); date.setDate(displayStart.getDate()+dayIndex); const isToday=formatISO(date)===todayISO; const weekday=(date.getDay()+6)%7;
+    const head=document.createElement('div'); head.className='day-header'+(isToday?' today':''); head.style.gridColumn=String(dayIndex+2); head.style.gridRow='1';
+    const leftNav=dayIndex===0?'<button class="week-nav" data-nav="-1" aria-label="Предыдущая неделя">‹</button>':'<span style="width:34px;height:34px;display:block"></span>';
+    const rightNav=dayIndex===6?'<button class="week-nav" data-nav="1" aria-label="Следующая неделя">›</button>':'<span style="width:34px;height:34px;display:block"></span>';
+    head.innerHTML=`<div class="day-header-inner">${leftNav}<div class="day-title"><div class="day-name">${DAYS[weekday]}</div><div class="day-date">${formatShort(date)}</div></div>${rightNav}</div>`;
+    D.calendar.appendChild(head);
+  }
+  for(let hour=0; hour<24; hour++){
+    const label=document.createElement('div'); label.className='time-cell'+(hour===23?' last':''); label.style.gridColumn='1'; label.style.gridRow=String(hour+2);
+    label.innerHTML=`<div class="time-inner">${String(hour).padStart(2,'0')}:00<div class="time-ruler"><span class="base"></span><span class="main"></span><span class="q1"></span><span class="q2"></span><span class="q3"></span></div></div>`; D.calendar.appendChild(label);
+    for(let dayIndex=0; dayIndex<7; dayIndex++){
+      const date=new Date(displayStart); date.setDate(displayStart.getDate()+dayIndex); const isToday=formatISO(date)===todayISO;
+      const cell=document.createElement('div'); cell.className='cell'+(dayIndex%2?' alt':'')+(isToday?' today':''); cell.style.gridColumn=String(dayIndex+2); cell.style.gridRow=String(hour+2); cell.dataset.date=formatISO(date); cell.dataset.hour=String(hour); D.calendar.appendChild(cell);
     }
-
-    function renderGrid(){
-      gridHead.innerHTML = '';
-      gridBody.innerHTML = '';
-
-      const corner = document.createElement('div');
-      corner.className = 'head-cell';
-      corner.textContent = 'Время';
-      gridHead.appendChild(corner);
-
-      const todayKey = dateKey(new Date());
-
-      for (let day = 0; day < 7; day++) {
-        const date = addDays(state.weekStart, day);
-        const head = document.createElement('div');
-        head.className = 'head-cell' + (dateKey(date) === todayKey ? ' today' : '');
-
-        const leftArrow = day === 0 ? `<button class="nav-week left" data-nav="-1">‹</button>` : '';
-        const rightArrow = day === 6 ? `<button class="nav-week right" data-nav="1">›</button>` : '';
-
-        head.innerHTML = `
-          ${leftArrow}
-          <div class="head-day">
-            <div class="dow">${DAYS_SHORT[day]}</div>
-            <div class="dom">${formatHeadDate(date)}</div>
-          </div>
-          ${rightArrow}
-        `;
-        gridHead.appendChild(head);
-      }
-
-      gridHead.querySelectorAll('.nav-week').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const dir = Number(e.currentTarget.dataset.nav);
-          state.weekStart = addDays(state.weekStart, dir * 7);
-          render();
-        });
-      });
-
-      for (let row = 0; row < TOTAL_ROWS; row++) {
-        const timeCell = document.createElement('div');
-        timeCell.className = 'time-cell';
-        timeCell.innerHTML = `
-          <div class="label">${rowToLabel(row)}</div>
-          <div class="ticks">
-            <div class="tick t0"></div>
-            <div class="tick t15"></div>
-            <div class="tick t30"></div>
-            <div class="tick t45"></div>
-            <div class="tick t60"></div>
-          </div>
-        `;
-        gridBody.appendChild(timeCell);
-
-        for (let day = 0; day < 7; day++) {
-          const date = addDays(state.weekStart, day);
-          const altClass = day % 2 === 0 ? 'col-a' : 'col-b';
-          const slot = document.createElement('div');
-          slot.className = `slot ${altClass}` + (dateKey(date) === todayKey ? ' today' : '');
-          slot.innerHTML = `<div class="quarter q15"></div><div class="quarter q30"></div><div class="quarter q45"></div>`;
-          slot.addEventListener('click', (ev) => {
-            const rect = slot.getBoundingClientRect();
-            const y = ev.clientY - rect.top;
-            const quarter = Math.floor((y / rect.height) * 4);
-            const mins = quarter * 15;
-            const start = `${String(row).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
-            const endMins = Math.min(row * 60 + mins + 60, 24 * 60);
-            openCreateModal({ date: dateKey(date), start, end: minutesToTime(endMins) });
-          });
-          gridBody.appendChild(slot);
-        }
-      }
-    }
-
-    function renderEvents(){
-      eventsLayer.innerHTML = '';
-      const weekDates = Array.from({ length: 7 }, (_, i) => dateKey(addDays(state.weekStart, i)));
-
-      for (const dayKey of weekDates) {
-        const dayEvents = state.events
-          .filter(e => e.date === dayKey)
-          .sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
-
-        const clusters = buildOverlapClusters(dayEvents);
-        const dayIndex = weekDates.indexOf(dayKey);
-
-        for (const cluster of clusters) {
-          cluster.forEach((event, overlapIndex) => {
-            const leftPct = (100 / 7) * dayIndex;
-            const dayWidthPct = (100 / 7);
-            const colWidthPct = dayWidthPct / cluster.length;
-            const pad = 5;
-            const top = (timeToMinutes(event.start) / 60) * ROW_H;
-            const height = ((timeToMinutes(event.end) - timeToMinutes(event.start)) / 60) * ROW_H - 4;
-
-            const card = document.createElement('div');
-            card.className = 'event';
-            card.dataset.cat = event.category || 'other';
-            card.style.top = `${top + 2}px`;
-            card.style.height = `${Math.max(height, 28)}px`;
-            card.style.left = `calc(${leftPct}% + ${colWidthPct * overlapIndex}% + ${pad}px)`;
-            card.style.width = `calc(${colWidthPct}% - ${pad * 2}px)`;
-            card.innerHTML = `
-              <div class="dot"></div>
-              <div class="t">${escapeHtml(event.title)}</div>
-              <div class="s">${event.start} — ${event.end}</div>
-            `;
-            card.addEventListener('click', (ev) => {
-              ev.stopPropagation();
-              openEditModal(event);
-            });
-            eventsLayer.appendChild(card);
-          });
-        }
-      }
-    }
-
-    function buildOverlapClusters(events){
-      const clusters = [];
-      let active = [];
-      for (const event of events) {
-        active = active.filter(e => timeToMinutes(e.end) > timeToMinutes(event.start));
-        if (active.length === 0) {
-          clusters.push([event]);
-          active = [event];
-        } else {
-          clusters[clusters.length - 1].push(event);
-          active.push(event);
-        }
-      }
-      return clusters;
-    }
-
-    function updateTodayColumn(){
-      const now = new Date();
-      const weekStart = new Date(state.weekStart);
-      const weekEnd = addDays(weekStart, 7);
-      if (now < weekStart || now >= weekEnd) {
-        todayColumnOverlay.style.display = 'none';
-        return;
-      }
-      const index = ((now.getDay() + 6) % 7);
-      todayColumnOverlay.style.display = 'block';
-      todayColumnOverlay.style.left = `calc(var(--timeW) + ((100% - var(--timeW)) / 7) * ${index})`;
-    }
-
-    function updateNowLine(){
-      const now = new Date();
-      const weekStart = new Date(state.weekStart);
-      const weekEnd = addDays(weekStart, 7);
-      if (now < weekStart || now >= weekEnd) {
-        nowLine.style.display = 'none';
-        return;
-      }
-      const minutes = now.getHours() * 60 + now.getMinutes();
-      const top = HEAD_H + (minutes / 60) * ROW_H;
-      nowLine.style.display = 'block';
-      nowLine.style.top = `${top}px`;
-    }
-
-    function openCreateModal(prefill = {}){
-      state.editingId = null;
-      modalTitle.textContent = 'Добавить мероприятие';
-      modalSub.textContent = 'Дата, время, название и категория.';
-      primaryBtn.textContent = 'Добавить';
-      secondaryBtn.textContent = 'Стереть';
-      eventForm.reset();
-      eventDate.value = prefill.date || dateKey(new Date());
-      eventCategory.value = prefill.category || 'work';
-      eventStart.value = prefill.start || '09:00';
-      eventEnd.value = prefill.end || '10:00';
-      eventTitle.value = prefill.title || '';
-      modalBackdrop.classList.add('show');
-      setTimeout(() => eventTitle.focus(), 20);
-    }
-
-    function openEditModal(event){
-      state.editingId = event.id;
-      modalTitle.textContent = 'Мероприятие';
-      modalSub.textContent = 'Можно отредактировать или удалить.';
-      primaryBtn.textContent = 'Редактировать';
-      secondaryBtn.textContent = 'Удалить';
-      eventTitle.value = event.title;
-      eventDate.value = event.date;
-      eventCategory.value = event.category || 'other';
-      eventStart.value = event.start;
-      eventEnd.value = event.end;
-      modalBackdrop.classList.add('show');
-      setTimeout(() => eventTitle.focus(), 20);
-    }
-
-    function closeModal(){
-      modalBackdrop.classList.remove('show');
-      state.editingId = null;
-    }
-
-    function getFormPayload(){
-      const title = eventTitle.value.trim();
-      const date = eventDate.value;
-      const category = eventCategory.value;
-      const start = eventStart.value;
-      const end = eventEnd.value;
-      if (!title || !date || !start || !end) return null;
-      if (timeToMinutes(end) <= timeToMinutes(start)) {
-        alert('Время окончания должно быть позже времени начала.');
-        return null;
-      }
-      return { title, date, category, start, end };
-    }
-
-    function applyZoom(newZoom, save = true, keepCenter = true){
-      const prev = state.zoom || 1;
-      state.zoom = Math.max(0.9, Math.min(1.8, newZoom));
-      const rect = plannerScroll.getBoundingClientRect();
-
-      let centerX = plannerScroll.scrollLeft + rect.width / 2;
-      let centerY = plannerScroll.scrollTop + rect.height / 2;
-
-      planner.style.transform = `scale(${state.zoom})`;
-      planner.style.width = `${100 / state.zoom}%`;
-      planner.style.height = `${(HEAD_H + TOTAL_ROWS * ROW_H) * state.zoom}px`;
-
-      if (keepCenter) {
-        const ratio = state.zoom / prev;
-        plannerScroll.scrollLeft = Math.max(0, centerX * ratio - rect.width / 2);
-        plannerScroll.scrollTop = Math.max(0, centerY * ratio - rect.height / 2);
-      }
-
-      if (save) localStorage.setItem(ZOOM_KEY, String(state.zoom));
-    }
-
-    function loadEvents(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; } }
-    function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.events)); }
-    function loadZoom(){ const v = Number(localStorage.getItem(ZOOM_KEY) || '1'); return Number.isFinite(v) ? v : 1; }
-
-    function getMonday(d){ const x = new Date(d); x.setHours(0,0,0,0); const day = (x.getDay() + 6) % 7; x.setDate(x.getDate() - day); return x; }
-    function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate() + n); return x; }
-    function dateKey(d){ const x = new Date(d); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; }
-    function formatHeadDate(d){ return new Intl.DateTimeFormat('ru-RU', { day:'numeric', month:'short' }).format(d); }
-    function rowToLabel(row){ return `${String(row).padStart(2,'0')}:00`; }
-    function timeToMinutes(t){ const [h,m] = t.split(':').map(Number); return h * 60 + m; }
-    function minutesToTime(total){ const h = Math.floor(total / 60); const m = total % 60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; }
-    function cryptoRandomId(){ if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); return String(Date.now()) + Math.random().toString(16).slice(2); }
-    function escapeHtml(str){ return str.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;"); }
-
-    // pinch zoom that does not break scroll
-    let pinchStartDist = null;
-    let pinchStartZoom = 1;
-    let pinchCenter = null;
-
-    plannerScroll.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 2) {
-        pinchStartDist = getTouchDistance(e.touches[0], e.touches[1]);
-        pinchStartZoom = state.zoom;
-        pinchCenter = {
-          x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-          y: (e.touches[0].clientY + e.touches[1].clientY) / 2
-        };
-      }
-    }, { passive: true });
-
-    plannerScroll.addEventListener('touchmove', (e) => {
-      if (e.touches.length === 2 && pinchStartDist) {
-        const dist = getTouchDistance(e.touches[0], e.touches[1]);
-        const scale = dist / pinchStartDist;
-        applyZoom(pinchStartZoom * scale);
-        e.preventDefault();
-      }
-    }, { passive: false });
-
-    plannerScroll.addEventListener('touchend', (e) => {
-      if (e.touches.length < 2) {
-        pinchStartDist = null;
-        pinchCenter = null;
-      }
-    }, { passive: true });
-
-    function getTouchDistance(t1, t2){
-      return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-    }
-
-    render();
-    setInterval(updateNowLine, 30000);
-  </script>
+  }
+  const bottom=document.createElement('div'); bottom.className='time-cell last'; bottom.style.gridColumn='1'; bottom.style.gridRow='26'; bottom.style.height='0px'; bottom.style.minHeight='0'; bottom.style.borderBottom='none';
+  bottom.innerHTML=`<div class="time-inner" style="position:absolute;bottom:-10px;left:0;right:0;height:auto;justify-content:center;padding-right:16px;">24:00<div class="time-ruler"><span class="base"></span><span class="main"></span></div></div>`; D.calendar.appendChild(bottom);
+  D.calendar.querySelectorAll('[data-nav]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation(); weekOffset+=Number(btn.dataset.nav); buildCalendar(); renderEvents(); updateNowLine()}));
+  D.calendar.querySelectorAll('.cell').forEach(cell=>cell.addEventListener('click',e=>{const rect=cell.getBoundingClientRect(), offsetY=e.clientY-rect.top, quarter=Math.min(3,Math.max(0,Math.floor(offsetY/(rect.height/4)))), hour=Number(cell.dataset.hour), startMinutes=hour*60+quarter*15, endMinutes=Math.min(startMinutes+60,24*60); openAddModal(cell.dataset.date,minutesToTime(startMinutes),minutesToTime(endMinutes))}));
+}
+function renderEvents(){
+  const displayStart=displayWeekStartFor(weekOffset), displayEnd=new Date(displayStart); displayEnd.setDate(displayEnd.getDate()+7);
+  D.eventsLayer.innerHTML='';
+  const st=getComputedStyle(document.documentElement), timeCol=parseFloat(st.getPropertyValue('--time-col')), headerH=parseFloat(st.getPropertyValue('--header-h')), hourH=parseFloat(st.getPropertyValue('--hour-h')), totalWidth=D.calendar.offsetWidth, dayW=(totalWidth-timeCol)/7;
+  D.eventsLayer.style.width=`${D.calendar.offsetWidth}px`; D.eventsLayer.style.height=`${D.calendar.offsetHeight}px`;
+  events.filter(ev=>{const d=new Date(ev.date+'T00:00:00'); return d>=displayStart && d<displayEnd}).sort(eventSort).forEach(ev=>{
+    const d=new Date(ev.date+'T00:00:00'), dayIndex=Math.floor((d-displayStart)/86400000), start=timeToMinutes(ev.start), end=timeToMinutes(ev.end), top=headerH+(start/60)*hourH, height=Math.max(((end-start)/60)*hourH-6,34), left=timeCol+dayIndex*dayW+6, width=dayW-12;
+    const card=document.createElement('div'); card.className=`event-card ${CATEGORIES[ev.category]?.className||'cat-other'}`; card.style.top=`${top+3}px`; card.style.left=`${left}px`; card.style.width=`${width}px`; card.style.height=`${height}px`;
+    card.innerHTML=`<div class="event-title">${escapeHtml(ev.title)}</div><div class="event-meta">${ev.start} — ${ev.end} • ${CATEGORIES[ev.category]?.label||'другое'}</div>`;
+    card.addEventListener('click',evn=>{evn.stopPropagation(); openEditModal(ev.id)}); D.eventsLayer.appendChild(card);
+  });
+}
+function updateNowLine(){
+  const now=new Date(), displayStart=displayWeekStartFor(weekOffset), displayEnd=new Date(displayStart); displayEnd.setDate(displayEnd.getDate()+7);
+  if(!(now>=displayStart && now<displayEnd)){D.nowLine.style.display='none'; return}
+  const st=getComputedStyle(document.documentElement), headerH=parseFloat(st.getPropertyValue('--header-h')), hourH=parseFloat(st.getPropertyValue('--hour-h')), minutes=now.getHours()*60+now.getMinutes();
+  D.nowLine.style.display='block'; D.nowLine.style.top=`${headerH+(minutes/60)*hourH}px`; D.nowLine.style.width=`${D.calendar.offsetWidth}px`;
+}
+function openAddModal(date,start,end){editingId=null; D.modalTitle.textContent='Добавить мероприятие'; D.primaryBtn.textContent='Добавить'; D.secondaryBtn.textContent='Стереть'; D.title.value=''; D.date.value=date; D.start.value=start; D.end.value=end; D.category.value='work'; D.modalBackdrop.classList.add('show')}
+function openEditModal(id){const ev=events.find(x=>x.id===id); if(!ev)return; editingId=id; D.modalTitle.textContent='Редактировать мероприятие'; D.primaryBtn.textContent='Редактировать'; D.secondaryBtn.textContent='Удалить'; D.title.value=ev.title; D.date.value=ev.date; D.start.value=ev.start; D.end.value=ev.end; D.category.value=ev.category; D.modalBackdrop.classList.add('show')}
+function closeModal(){D.modalBackdrop.classList.remove('show')}
+function submitModal(){const title=D.title.value.trim(), date=D.date.value, start=D.start.value, end=D.end.value, category=D.category.value; if(!title||!date||!start||!end){alert('Заполни все поля.'); return} const startMin=timeToMinutes(start), endMin=clampEventEnd(startMin,timeToMinutes(end)), payload={title,date,start:minutesToTime(startMin),end:minutesToTime(endMin),category}; if(editingId){const t=events.find(x=>x.id===editingId); if(t)Object.assign(t,payload)} else {events.push({id:(crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random())),...payload})} events.sort(eventSort); saveLocalEvents(); saveRemoteEvents(events); renderEvents(); closeModal()}
+function secondaryModalAction(){if(editingId){events=events.filter(x=>x.id!==editingId); saveLocalEvents(); saveRemoteEvents(events); renderEvents(); closeModal()} else {D.title.value=''; D.start.value=''; D.end.value=''}}
+D.openAddBtn.addEventListener('click',()=>{const s=displayWeekStartFor(weekOffset); openAddModal(formatISO(s),'09:00','10:00')});
+D.primaryBtn.addEventListener('click',submitModal); D.secondaryBtn.addEventListener('click',secondaryModalAction); D.modalBackdrop.addEventListener('click',e=>{if(e.target===D.modalBackdrop)closeModal()});
+window.addEventListener('resize',()=>{renderEvents(); updateNowLine()}); setInterval(updateNowLine,60000);
+buildCalendar(); renderEvents(); updateNowLine();
+requestAnimationFrame(()=>{const st=getComputedStyle(document.documentElement), headerH=parseFloat(st.getPropertyValue('--header-h')), hourH=parseFloat(st.getPropertyValue('--hour-h')), now=new Date(), minutes=now.getHours()*60+now.getMinutes(); D.scroll.scrollTop=Math.max(0,headerH+(minutes/60)*hourH-D.scroll.clientHeight/2)});
+})();
+</script>
 </body>
 </html>
